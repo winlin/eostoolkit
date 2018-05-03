@@ -31,7 +31,7 @@ bash eosbpinit.sh init
 
 ## monitor_sync.py
 
-You have to modify the monitor_sync.py and add MONITOR_NODES, and monitor_sync.py will call /v1/chain/get_info for every node with special interval.
+You have to modify the monitor_sync.py and add node infomation into MONITOR_NODES list. monitor_sync.py will call /v1/chain/get_info for every node with special interval.
 The warning message will be send by Telegram bot, if you are not familiar with Telegram, this [manual](https://www.forsomedefinition.com/automation/creating-telegram-bot-notifications/) maybe useful.
 Then you can modify the monitor_sync.conf_tpl and add it into /etc/supervisor/conf.d/ to keep the monitor script always running.
 
