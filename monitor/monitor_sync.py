@@ -92,7 +92,9 @@ def main():
         log("Going to start check node ...")
         for node in MONITOR_NODES:
             check_node(node)
+        sys.stdout.flush()
         time.sleep(DEFAULT_FREQ)
+
 
 if __name__ == '__main__':
     usage()
