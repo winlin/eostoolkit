@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EOS_TAG="DAWN-2018-04-23-ALPHA"
+EOS_TAG=""
 
 INSTALL_APPS=(
     "tmux"
@@ -12,11 +12,15 @@ INSTALL_APPS=(
     "software-properties-common"
     "python-pip"
     "tree"
+    "supervisor"
     )
 
 PIP_APPS=(
     "requests"
     "docker-compose"
+    "libconf"
+    "argparse"
+    "pyjsonrpc"
     )
 
 APP_REPO=(
@@ -48,6 +52,7 @@ fi
 
 
 function install_docker() {
+    echo ">>>>>>>>>>> install Docker"
     curl -fsSL get.docker.com -o get-docker.sh
     sudo sh get-docker.sh --mirror Aliyun
 
@@ -63,6 +68,19 @@ function init_pip() {
     for item in "${PIP_APPS[@]}"; do
         sudo pip install "$item" --upgrade
     done
+}
+
+function pull_eostoolkit() {
+    cd $INIT_PATH
+    if [[ ! -e eostoolkit ]]; then
+        git clone https://github.com/winlin/eostoolkit.git
+        if [[ $? -ne 0 ]]; then
+            echo "FAILED to get eostoolkit code"
+            exit 1
+        fi
+    fi
+    cd eostoolkit
+    git pull origin
 }
 
 function init_host() {
@@ -88,6 +106,7 @@ function init_host() {
 
     install_docker
     init_pip
+    pull_eostoolkit
 }
 
 function pull_eossrc() {
@@ -155,6 +174,9 @@ if [[ $1 == "pull" ]]; then
     pull_eossrc
     exit 0
 fi
+
+echo "update eostoolkit ..."
+pull_eostoolkit
 
 EOS_TAG=$2
 if [[ $EOS_TAG == "" ]]; then
