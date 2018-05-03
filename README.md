@@ -1,6 +1,6 @@
 # eostoolkit
 
-Thie repository is a collection of EOSBIXIN toolkit for maintaining EOSIO node machine.
+Thie repository is a collection of [EOSBIXIN](http://en.eosbixin.com/) toolkit for maintaining EOSIO node machine.
 ## Function list 
 
 -  eosbpinit.sh can install apps/pips, pull lastest EOSIO source code and trigger eosio_build.sh with TAG name
@@ -31,9 +31,9 @@ bash eosbpinit.sh init
 
 ## monitor_sync.py
 
-### You have to modify the monitor_sync.py and add MONITOR_NODES, and monitor_sync.py will call /v1/chain/get_info for every node with special interval.
-### The warning message will be send by Telegram bot, if you are not familiar with Telegram, this [[ https://www.forsomedefinition.com/automation/creating-telegram-bot-notifications/ | manual ]] maybe useful.
-### Then you can modify the monitor_sync.conf_tpl and add it into /etc/supervisor/conf.d/ to keep the monitor script always running.
+You have to modify the monitor_sync.py and add MONITOR_NODES, and monitor_sync.py will call /v1/chain/get_info for every node with special interval.
+The warning message will be send by Telegram bot, if you are not familiar with Telegram, this [manual](https://www.forsomedefinition.com/automation/creating-telegram-bot-notifications/) maybe useful.
+Then you can modify the monitor_sync.conf_tpl and add it into /etc/supervisor/conf.d/ to keep the monitor script always running.
 
 ### Usage:
 ```
