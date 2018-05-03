@@ -43,8 +43,9 @@ def telegram_alarm(message):
 NODE_STATUS = {}
 def check_node(node):
     global NODE_STATUS
-    if node[1] not in NODE_STATUS:
-        NODE_STATUS[node[1]] = {'head_block_num':0, 'last_irreversible_block_num':0}
+    node_key = "%s_%d" % (node[1], node[2])
+    if node_key not in NODE_STATUS:
+        NODE_STATUS[node_key] = {'head_block_num':0, 'last_irreversible_block_num':0}
     try:
         url = "http://%s:%d/v1/chain/get_info" % (node[1], node[2] )
         result = requests.get(url, timeout=3.0)
@@ -54,18 +55,18 @@ def check_node(node):
         result_info = json.loads(result.text)
 
         message = ""
-        if result_info["head_block_num"] <= NODE_STATUS[node[1]]['head_block_num'] and NODE_STATUS[node[1]]['head_block_num'] > 0:
+        if result_info["head_block_num"] <= NODE_STATUS[node_key]['head_block_num'] and NODE_STATUS[node_key]['head_block_num'] > 0:
             message = "head_block_num increase ERROR %d;" % (result_info["head_block_num"])
-        if result_info["last_irreversible_block_num"] <= NODE_STATUS[node[1]]['last_irreversible_block_num'] and NODE_STATUS[node[1]]['last_irreversible_block_num'] > 0:
+        if result_info["last_irreversible_block_num"] <= NODE_STATUS[node_key]['last_irreversible_block_num'] and NODE_STATUS[node_key]['last_irreversible_block_num'] > 0:
             message += "\nlast_irreversible_block_num increase ERROR %d;" % (result_info["last_irreversible_block_num"])
 
-        NODE_STATUS[node[1]]['head_block_num'], NODE_STATUS[node[1]]['last_irreversible_block_num'] = result_info["head_block_num"], result_info["last_irreversible_block_num"]
-        log("Get %s %s head_block_num=%d last_irreversible_block_num=%d" %(node[0], node[1], result_info["head_block_num"], result_info["last_irreversible_block_num"]))
+        NODE_STATUS[node_key]['head_block_num'], NODE_STATUS[node_key]['last_irreversible_block_num'] = result_info["head_block_num"], result_info["last_irreversible_block_num"]
+        log("Get %s %s head_block_num=%d last_irreversible_block_num=%d" %(node[0], node_key, result_info["head_block_num"], result_info["last_irreversible_block_num"]))
         if message:
-            message += "\n%s %s" % (node[0], node[1])
+            message += "\n%s %s" % (node[0], node_key)
             telegram_alarm(message)
     except Exception as e:
-        log("Get exception:%s %s" % (str(e), node[0]))
+        log("Get exception:%s %s %s" % (str(e), node[0], node_key))
 
 
 def usage():
@@ -73,7 +74,7 @@ def usage():
     parser = argparse.ArgumentParser(description='BP nodeosd monitor tool.')
     parser.add_argument('-i', '--interval', default=DEFAULT_FREQ, help='check interval(s) default:%d seconds' % DEFAULT_FREQ)
     parser.add_argument('-t', '--token', required=True, help='telegram bot token')
-    parser.add_argument('-d', '--chatid', required=True, help='message recieve telegram chat id')
+    parser.add_argument('-d', '--chatid', required=True, help='message reciever telegram chat id')
     args = parser.parse_args()
     DEFAULT_FREQ, TELEGRAM_CHATID = int(args.interval), int(args.chatid)
     TELEGRAM_TOKEN = args.token

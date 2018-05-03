@@ -2,14 +2,14 @@ version: "3"
 
 services:
   nodeosd:
-    image: eosio/eos:latest
+    image: winlin/eos:DAWN-2018-04-27-ALPHA
     command: /opt/eosio/bin/nodeosd.sh --data-dir /opt/eosio/bin/data-dir
     hostname: nodeosd
     ports:
       - 8888:8888
       - 9876:9876
     expose:
-      - "8888"
+      - "9876"
     volumes:
       - 'local_data_path':/opt/eosio/bin/data-dir
 
