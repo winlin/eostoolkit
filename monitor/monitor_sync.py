@@ -40,25 +40,29 @@ def telegram_alarm(message):
         log("Get exception:%s" % str(e))
 
 
+NODE_STATUS = {}
 def check_node(node):
+    global NODE_STATUS
+    if node[1] not in NODE_STATUS:
+        NODE_STATUS[node[1]] = {'head_block_num':0, 'last_irreversible_block_num':0}
     try:
         url = "http://%s:%d/v1/chain/get_info" % (node[1], node[2] )
         result = requests.get(url, timeout=3.0)
         if result.status_code/100 !=2 :
             log('Failed to call %s result:%s ' % (url, result.text))
-            continue
+            return
         result_info = json.loads(result.text)
 
         message = ""
-        if result_info["head_block_num"] <= head_block_num and head_block_num > 0:
+        if result_info["head_block_num"] <= NODE_STATUS[node[1]]['head_block_num'] and NODE_STATUS[node[1]]['head_block_num'] > 0:
             message = "head_block_num increase ERROR %d;" % (result_info["head_block_num"])
-        if result_info["last_irreversible_block_num"] <= last_irreversible_block_num and last_irreversible_block_num > 0:
+        if result_info["last_irreversible_block_num"] <= NODE_STATUS[node[1]]['last_irreversible_block_num'] and NODE_STATUS[node[1]]['last_irreversible_block_num'] > 0:
             message += "\nlast_irreversible_block_num increase ERROR %d;" % (result_info["last_irreversible_block_num"])
 
-        head_block_num, last_irreversible_block_num = result_info["head_block_num"], result_info["last_irreversible_block_num"]
-        log("Get head_block_num=%d last_irreversible_block_num=%d" %(head_block_num, last_irreversible_block_num))
+        NODE_STATUS[node[1]]['head_block_num'], NODE_STATUS[node[1]]['last_irreversible_block_num'] = result_info["head_block_num"], result_info["last_irreversible_block_num"]
+        log("Get %s %s head_block_num=%d last_irreversible_block_num=%d" %(node[0], node[1], result_info["head_block_num"], result_info["last_irreversible_block_num"]))
         if message:
-            message += "\n%s" % (node[0])
+            message += "\n%s %s" % (node[0], node[1])
             telegram_alarm(message)
     except Exception as e:
         log("Get exception:%s %s" % (str(e), node[0]))
@@ -85,6 +89,7 @@ def main():
     global DEFAULT_FREQ
     head_block_num, last_irreversible_block_num = -1, -1
     while True:
+        log("Going to start check node ...")
         for node in MONITOR_NODES:
             check_node(node)
         time.sleep(DEFAULT_FREQ)
