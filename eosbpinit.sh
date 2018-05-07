@@ -13,6 +13,7 @@ INSTALL_APPS=(
     "python-pip"
     "tree"
     "supervisor"
+    "wireguard"
     )
 
 PIP_APPS=(
@@ -25,6 +26,7 @@ PIP_APPS=(
 
 APP_REPO=(
     "ppa:git-core/ppa"
+    "ppa:wireguard/wireguard"
     #"deb [arch=amd64] https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
     )
 
