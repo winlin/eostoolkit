@@ -16,6 +16,7 @@ sudo docker-compose exec nodeosd bash
 alias cleos='cleos -u http://localhost:$NODEOSPORT --wallet-url http://localhost:$WALLETPORT'
 ```
 *也可以将 cleos 的 alias 添加到 /root/.bashrc 中，避免每次进入docker bash都要执行*
+*NODEOSPORT、WALLETPORT 是docker-compose.yml中声明的环境变量*
 
 ### 4.创建钱包并导入默认创建的eosio账户的 producer key (config.ini文件中)
 ```
@@ -65,7 +66,7 @@ cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --bu
 cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram-bytes 1024  eosio voter3333333 OWNER_PUBKEY -p eosio
 cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram-bytes 1024  eosio voter4444444 OWNER_PUBKEY -p eosio
 ```
-### 13.向投票账户发放共超过3亿的EOS，要让其他BP开始生产就需要一共有超过1.5亿的EOS被质押(cpu/ram 单个超过1.5亿)
+### 13.向投票账户发放共超过3亿的EOS，要让其他BP出块就需要一共有超过1.5亿的EOS被质押(cpu/ram 单个超过1.5亿)
 ```
 cleos push action eosio.token issue '{"to":"voter1111111","quantity":"80000000.0000 EOS","memo":"issue"}' -p eosio
 cleos push action eosio.token issue '{"to":"voter2222222","quantity":"80000000.0000 EOS","memo":"issue"}' -p eosio
@@ -75,7 +76,7 @@ cleos push action eosio.token issue '{"to":"voter4444444","quantity":"100000000.
 cleos get currency balance eosio.token voter1111111
 cleos get currency balance eosio.token voter2222222
 ```
-### 14.投票账户进行托管并进行投票
+### 14.投票账户进行托管并投票
 ```
 #托管
 cleos system delegatebw voter1111111 voter1111111 "40000000.0000 EOS"  "40000000.0000 EOS" --transfer
@@ -102,7 +103,7 @@ cp firstnode/config.ini firstnode/docker-compose.yml fisetnode/genesis.json thir
 修改的部分如下：
 * docker-compose.yml: 
     * 其中两个端口需要分配成未使用的
-    * volumes 的本地路基要调整下
+    * volumes 的本地路径要调整下
 * config.ini:
     * p2p-listen-endpoint 
     * http-server-address 
@@ -110,8 +111,7 @@ cp firstnode/config.ini firstnode/docker-compose.yml fisetnode/genesis.json thir
     * producer-name
     * p2p-peer-address
 
-做完上面操作之后 eosio 会停止出块，由新创建的BP进行出块
-剩余的就是使用 bp1111111111、bp2222222222 启动节点进行区块生产，对应的示例配置文件可以在当前目录下查看.
+做完上面操作之后 eosio 会停止出块，由新创建的BP进行出块，对应的示例配置文件可以在当前目录下查看.
 
 *本过程参考了Zhaoyu [<<register-producer-and-vote-dawn-4.0.md>>](https://gist.github.com/JohnnyZhao/147636a325118ccc51da48e9e8e68de7)以及[EOS.HOST](https://eos.host/)团队的提供的友情支持。*
 
