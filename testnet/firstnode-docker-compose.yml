@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  nodeosd:
+    image: winlin/eos:self-20180518
+    command: /opt/eosio/bin/nodeosd.sh --data-dir /opt/eosio/bin/data-dir
+    hostname: nodeosd
+    ports:
+      - 38888:38888
+      - 39876:39876
+    expose:
+      - "38888"
+      - "39876"
+    environment:
+      - NODEOSPORT=38888
+      - WALLETPORT=38900
+    volumes:
+      - /data/eos/selfdocker:/opt/eosio/bin/data-dir

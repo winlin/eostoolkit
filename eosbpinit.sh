@@ -14,6 +14,7 @@ INSTALL_APPS=(
     "tree"
     "supervisor"
     "wireguard"
+    "certbot"
     )
 
 PIP_APPS=(
@@ -22,11 +23,13 @@ PIP_APPS=(
     "libconf"
     "argparse"
     "pyjsonrpc"
+    "stormssh"
     )
 
 APP_REPO=(
     "ppa:git-core/ppa"
     "ppa:wireguard/wireguard"
+    "ppa:certbot/certbot"
     #"deb [arch=amd64] https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
     )
 

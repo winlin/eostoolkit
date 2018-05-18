@@ -10,6 +10,9 @@ services:
       - 9876:9876
     expose:
       - "9876"
+    environment:
+      - NODEOSPORT=8888
+      - WALLETPORT=8900
     volumes:
       - 'local_data_path':/opt/eosio/bin/data-dir
 
