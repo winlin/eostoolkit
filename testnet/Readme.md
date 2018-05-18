@@ -1,7 +1,5 @@
-本篇教程讲述了怎样自己动手搭建一个EOSIO 的Testnet，采用Docker进行部署，直接将 ../docker-compose.yml 进行改动下即可。  
-
-注意:  
-    请使用 winlin/eos:VERSION的镜像，里面默认已经安装 vim、net-tools工具  
+本篇教程讲述了怎样自己动手搭建一个EOSIO 的Testnet，采用Docker进行部署，直接将[../docker-compose.yml](https://github.com/winlin/eostoolkit/blob/master/docker-compose.yml)进行改动下即可。
+注意: 建议使用 winlin/eos:VERSION的镜像，里面默认已经安装 vim、net-tools工具  
 
 ### 1.创建一个新目录用来启动Testnet的起始节点
 ```
