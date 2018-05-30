@@ -15,6 +15,14 @@ INSTALL_APPS=(
     "supervisor"
     "wireguard"
     "certbot"
+    "python3-setuptools"
+    "python-setuptools"
+    "python3.6"
+    "python3.6-dev"
+    "python-dev"
+    "python3.6-gdbm"
+    "python3-pip"
+    "libssl-dev"
     )
 
 PIP_APPS=(
@@ -30,6 +38,7 @@ APP_REPO=(
     "ppa:git-core/ppa"
     "ppa:wireguard/wireguard"
     "ppa:certbot/certbot"
+    "ppa:deadsnakes/ppa"
     #"deb [arch=amd64] https://mirrors.ustc.edu.cn/docker-ce/linux/ubuntu $(lsb_release -cs) stable"
     )
 
