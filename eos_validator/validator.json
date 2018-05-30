@@ -1,0 +1,15 @@
+{
+  "nodeosd_host":"127.0.0.1:10016",
+  "snapshot_lines":1000,
+  "token_name":"EOS",
+  "eos-bios":{
+    "enable":true,
+    "single_boot":false,
+    "my_discovery_file":"/data/eos/eosbios/stage16/my_discovery_file.yaml",
+    "seed_network_http_address":"http://stage15.testnets.eoscanada.com"
+  },
+  "code_hash_compare":{
+    "nodeosd_host":"127.0.0.1:10016",
+    "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
+  }
+}
