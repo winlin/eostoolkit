@@ -119,7 +119,6 @@ def check_account_privileged(account_info):
         return False
     return True
 
-
 def get_onchain_balance(account_name, node_host):
         body = {'scope':account_name, 'code':'eosio.token', 'table':'accounts', 'json':True}
         ret = requests.post("http://%s/v1/chain/get_table_rows" % node_host, data=json.dumps(body), timeout=2)
@@ -166,9 +165,12 @@ def check_balance_signal_account(param):
         if account_info['delegated_bandwidth']:
             net_delegated, cpu_delegated = token_str2float(account_info['delegated_bandwidth']['net_weight']), token_str2float(account_info['delegated_bandwidth']['cpu_weight'])
 
-        # Validate the balance onchain whether same with the snapshot amount
-        onchain_balance = balance + net_weight + cpu_weight
+        # after the snapshot inject the: net_delegated == cpu_delegated == 0
+        if net_delegated != cpu_delegated != 0:
+            print 'WARNING: after the snapshot inject, the net_delegated, cpu_delegated should be 0'
         
+        # Validate the balance onchain whether same with the snapshot amount
+        onchain_balance = balance + net_weight + cpu_weight + net_delegated + cpu_delegated
 
         if abs(snapshot_balance - onchain_balance) > Decimal(0.0001):
             print '%-12s balance:%s net_delegated:%s cpu_delegated:%s net_weight:%s cpu_weight:%s onchain_balance:%s snapshot_balance:%s' % (account_name, balance, 
