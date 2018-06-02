@@ -22,6 +22,7 @@ requests.adapters.DEFAULT_RETRIES = 3
 #             EOS-BIOS FUNCS               #
 ############################################
 def get_eosbios_producer_account(seed_network_http_address):
+        return True, set()
         ret = requests.get(seed_network_http_address, timeout=6)
         if ret.status_code/100 != 2:
             print 'ERROR: failed to get producer account from:', seed_network_http_address
@@ -108,9 +109,16 @@ def weight_str2float(weight):
 
 def check_account_privileged(account_info):
     #Validate the privileged, ONLY (eosio、eosio.msig) can be privileged FOR NOW
-    if account_info['privileged']:
-        return account_info['account_name'] in ('eosio', 'eosio.msig')
-    return not account_info['account_name'] in ('eosio', 'eosio.msig')
+    is_sys_acct = account_info['account_name'] in ('eosio', 'eosio.msig')
+    if (account_info['privileged'] and not is_sys_acct) or (not account_info['privileged'] and is_sys_acct):
+        print 'privileged check failed :', account_info['account_name'], ' privileged:', account_info['privileged']
+        return False
+    #Check the ram_quota
+    if account_info['ram_quota'] > 8157:
+        print 'ram_quota <= 8157 check failed:', account_info['ram_quota']
+        return False
+    return True
+
 
 def get_onchain_balance(account_name, node_host):
         body = {'scope':account_name, 'code':'eosio.token', 'table':'accounts', 'json':True}
@@ -147,24 +155,26 @@ def check_balance_signal_account(param):
             print 'ERROR: account %s snapshot pubkey(%s)!=onchain pubkey(%s)' % (account_name, pub_key, owner_pubkey)
             return signal_onchain_amount
 
-         # call get account balance
+        # call get account balance
         balance = get_onchain_balance(account_name, node_host)
         if balance < 0:
             print 'ERROR: failed to call get_table_rows accounts for:', account_name, ret.text
             return signal_onchain_amount
 
-        net_weight, cpu_weight = weight_str2float(account_info['net_weight']), weight_str2float(account_info['cpu_weight'])
+        net_weight, cpu_weight = token_str2float(account_info['total_resources']['net_weight']), token_str2float(account_info['total_resources']['cpu_weight'])
         net_delegated, cpu_delegated = Decimal(0), Decimal(0)
         if account_info['delegated_bandwidth']:
             net_delegated, cpu_delegated = token_str2float(account_info['delegated_bandwidth']['net_weight']), token_str2float(account_info['delegated_bandwidth']['cpu_weight'])
 
         # Validate the balance onchain whether same with the snapshot amount
-        onchain_balance = balance + net_delegated + cpu_delegated
+        onchain_balance = balance + net_weight + cpu_weight
+        
+
         if abs(snapshot_balance - onchain_balance) > Decimal(0.0001):
+            print '%-12s balance:%s net_delegated:%s cpu_delegated:%s net_weight:%s cpu_weight:%s onchain_balance:%s snapshot_balance:%s' % (account_name, balance, 
+                    net_delegated, cpu_delegated, net_weight, cpu_weight, onchain_balance, snapshot_balance)
             print 'ERROR: account %s snapshot_balance(%s) != onchain_balance(%s)' % (account_name, snapshot_balance, onchain_balance)
             return signal_onchain_amount
-        #print '%-12s balance:%s net_delegated:%s cpu_delegated:%s onchain_balance:%s snapshot_balance:%s' % (account_name, balance, 
-        #            net_delegated, cpu_delegated, onchain_balance, snapshot_balance)
         
         signal_onchain_amount = balance + net_weight + cpu_weight
         return signal_onchain_amount
@@ -318,7 +328,7 @@ def check_contracts(conf_dict):
         for account_name in conf_dict["code_hash_compare"]["accounts"]:
             cur_ret = requests.post("http://%s/v1/chain/get_code" % conf_dict['nodeosd_host'], data=json.dumps({'account_name':account_name}), timeout=5)
             if cur_ret.status_code/100 != 2:
-                print 'ERROR: failed to call get_code for:', account_name, conf_dict['nodeosd_host'], ret.text
+                print 'ERROR: failed to call get_code for:', account_name, conf_dict['nodeosd_host'], cur_ret.text
                 raise Exception("")
             cur_code_info = json.loads(cur_ret.text)
             compare_ret = requests.post("http://%s/v1/chain/get_code" % conf_dict['code_hash_compare']['nodeosd_host'], data=json.dumps({'account_name':account_name}), timeout=5)
@@ -334,6 +344,7 @@ def check_contracts(conf_dict):
         return True
     except Exception as e:
         print 'ERROR: !!! The Contracts Check FAILED !!!'
+        print traceback.print_exc()
         return False
 
 ####################################################################
@@ -365,8 +376,7 @@ def main():
     process_pool = multiprocessing.Pool(processes=cpu_count)
     try:
         if action == 'all':
-            if not check_contracts(conf_dict):
-                return False
+            check_contracts(conf_dict)
 
             time_start = time.time()
             result, line_number = check_balance(conf_dict, process_pool, cpu_count)
