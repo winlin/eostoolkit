@@ -161,6 +161,10 @@ def check_balance_signal_account(param):
             return signal_onchain_amount
 
         net_weight, cpu_weight = token_str2float(account_info['total_resources']['net_weight']), token_str2float(account_info['total_resources']['cpu_weight'])
+        if abs(net_weight - cpu_weight) > Decimal(0.0001):
+            print 'ERROR: net_weight %s != cpu_weight %s' % (net_weight, cpu_weight)
+            return signal_onchain_amount
+        
         net_delegated, cpu_delegated = Decimal(0), Decimal(0)
         if account_info['delegated_bandwidth']:
             net_delegated, cpu_delegated = token_str2float(account_info['delegated_bandwidth']['net_weight']), token_str2float(account_info['delegated_bandwidth']['cpu_weight'])

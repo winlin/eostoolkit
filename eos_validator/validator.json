@@ -6,10 +6,10 @@
     "enable":true,
     "single_boot":false,
     "my_discovery_file":"/data/eos/eosbios/stage20/my_discovery_file.yaml",
-    "seed_network_http_address":"http://stage17.testnets.eoscanada.com"
+    "seed_network_http_address":"NO_USE"
   },
   "code_hash_compare":{
-    "nodeosd_host":"127.0.0.1:10016",
+    "nodeosd_host":"127.0.0.1:38888",
     "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
   }
 }
