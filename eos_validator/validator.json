@@ -1,6 +1,6 @@
 {
   "nodeosd_host":"127.0.0.1:10027",
-  "snapshot_lines":3,
+  "snapshot_lines":0,
   "token_name":"EOS",
   "eos-bios":{
     "enable":true,

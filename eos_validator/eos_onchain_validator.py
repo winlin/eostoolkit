@@ -165,12 +165,8 @@ def check_balance_signal_account(param):
         if account_info['delegated_bandwidth']:
             net_delegated, cpu_delegated = token_str2float(account_info['delegated_bandwidth']['net_weight']), token_str2float(account_info['delegated_bandwidth']['cpu_weight'])
 
-        # after the snapshot inject the: net_delegated == cpu_delegated == 0
-        if net_delegated != cpu_delegated != 0:
-            print 'WARNING: after the snapshot inject, the net_delegated, cpu_delegated should be 0'
-        
         # Validate the balance onchain whether same with the snapshot amount
-        onchain_balance = balance + net_weight + cpu_weight + net_delegated + cpu_delegated
+        onchain_balance = balance + net_weight + cpu_weight
 
         if abs(snapshot_balance - onchain_balance) > Decimal(0.0001):
             print '%-12s balance:%s net_delegated:%s cpu_delegated:%s net_weight:%s cpu_weight:%s onchain_balance:%s snapshot_balance:%s' % (account_name, balance, 
