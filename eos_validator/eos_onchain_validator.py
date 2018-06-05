@@ -53,9 +53,23 @@ def dl_files(conf_dict, disco_conf):
             sys.exit(1)
         conf_dict['dlfiles'][file['name']] = tmpfile
 
+def wget_snapshot_file(conf_dict):
+    print 'downloading:', conf_dict['snapshot_url']
+    tmpfile = os.path.join("/tmp/", str(time.time())+'_'+'snapshot.csv')
+    wget_cmd = "wget -O %s %s > /dev/null 2>&1" % (tmpfile, conf_dict['snapshot_url'])
+    ret = subprocess.call(wget_cmd, shell=True)
+    if ret != 0:
+        print 'ERROR: Failed to get file:',wget_cmd
+        sys.exit(1)
+    conf_dict['dlfiles']['snapshot.csv'] = tmpfile
+
 def get_eosbios_account(conf_dict):
-    conf_dict['sys_accounts'] = set(['eosio','eosio.ramfee','eosio.ram','eosio.unregd','eosio.stake'])
+    conf_dict['sys_accounts'] = set(['eosio','eosio.msig','eosio.token','eosio.burned','eosio.names',
+                                        'eosio.saving','eosio.bpay','eosio.vpay','eosio.disco',
+                                        'eosio.ramfee','eosio.ram','eosio.unregd','eosio.stake','genesisblock'])
     conf_dict['producer_names'] = set()
+    wget_snapshot_file(conf_dict)
+
     if 'eos-bios' not in conf_dict or not conf_dict['eos-bios']['enable']:
         return
     if not os.path.isfile(conf_dict['eos-bios']['my_discovery_file']):
@@ -331,23 +345,28 @@ def check_balance(conf_dict, process_pool, cpu_count):
 ############################################
 def check_contracts(conf_dict):
     try:
+        check_result = True
         for account_name in conf_dict["code_hash_compare"]["accounts"]:
+            print 'Comparing codehash for:', account_name 
             cur_ret = requests.post("http://%s/v1/chain/get_code" % conf_dict['nodeosd_host'], data=json.dumps({'account_name':account_name}), timeout=5)
             if cur_ret.status_code/100 != 2:
                 print 'ERROR: failed to call get_code for:', account_name, conf_dict['nodeosd_host'], cur_ret.text
-                raise Exception("")
+                check_result = False
             cur_code_info = json.loads(cur_ret.text)
             compare_ret = requests.post("http://%s/v1/chain/get_code" % conf_dict['code_hash_compare']['nodeosd_host'], data=json.dumps({'account_name':account_name}), timeout=5)
             if compare_ret.status_code/100 != 2:
                 print 'ERROR: failed to call get_code for:', account_name, conf_dict['code_hash_compare']['nodeosd_host'], compare_ret.text
-                raise Exception("")
+                check_result = False
             compare_code_info = json.loads(compare_ret.text)
             if cur_code_info['code_hash'] != compare_code_info['code_hash']:
                 print 'ERROR: code hash compare failed:', account_name, cur_code_info['code_hash'], compare_code_info['code_hash']
-                raise Exception("")
+                check_result = False
             print account_name, cur_code_info['code_hash'], compare_code_info['code_hash']
-        print 'SUCCESS: !!! The Contracts Check SUCCESS !!!'
-        return True
+        if check_result:
+            print 'SUCCESS: !!! The Contracts Check SUCCESS !!!'
+        else:
+            print 'ERROR: !!! The Contracts Check FAILED !!!'
+        return check_result
     except Exception as e:
         print 'ERROR: !!! The Contracts Check FAILED !!!'
         print traceback.print_exc()

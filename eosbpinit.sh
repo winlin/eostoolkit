@@ -117,6 +117,11 @@ function init_host() {
             exit 1
         fi
     done
+    # initialize bashrc
+    alias | grep dlog
+    if [[ $? != 0 ]]; then
+        echo "alias dlog='sudo docker-compose logs -t -f'" >> ~/.bashrc
+    fi
 
     install_docker
     init_pip

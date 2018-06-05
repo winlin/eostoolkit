@@ -1,15 +1,16 @@
 {
-  "nodeosd_host":"127.0.0.1:10027",
+  "nodeosd_host":"127.0.0.1:81",
   "snapshot_lines":0,
   "token_name":"EOS",
+  "snapshot_url":"https://raw.githubusercontent.com/eosauthority/genesis/master/snapshot-files/final/2/snapshot.csv",
   "eos-bios":{
-    "enable":true,
+    "enable":false,
     "single_boot":false,
     "my_discovery_file":"/data/eos/eosbios/stage20/my_discovery_file.yaml",
     "seed_network_http_address":"NO_USE"
   },
   "code_hash_compare":{
-    "nodeosd_host":"127.0.0.1:38888",
+    "nodeosd_host":"127.0.0.1:80",
     "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
   }
 }

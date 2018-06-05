@@ -39,10 +39,11 @@ optional arguments:
   --config CONFIG  validator.json config file path
 ```
 
-### validator.json 
+### validator.json - for EOS-BIOS
 ```
 nodeosd_host: ip:host for the target network noedeosd ip and http port, for example 127.0.0.1:8888
 snapshot_lines: 0 means check all the accounts; >0 means the number of the accounts to check
+snapshot_url: the HTTP url to download, if eos-bios.enable==true, the snapshot file in ipfs will be used
 eos-bios.enable: true means the target network boosted by eos-bios
 eos-bios.single_boot: whether the target neteork is running by eos-bios boot --single
 eos-bios.seed_network_http_address: the seed network of eos-bios to get the registered producer accounts
@@ -51,21 +52,52 @@ code_hash_compare.accounts: the codehash of account will be compared between nod
 
 For example:
 {
-  "nodeosd_host":"127.0.0.1:10020",
-  "eos_issued":2000000000.0000,
-  "snapshot_lines":1000,
+  "nodeosd_host":"127.0.0.1:81",
+  "snapshot_lines":0,
+  "token_name":"EOS",
+  "snapshot_url":"https://raw.githubusercontent.com/eosauthority/genesis/master/snapshot-files/final/2/snapshot.csv",
   "eos-bios":{
     "enable":true,
     "single_boot":false,
-    "my_discovery_file":"/data/eos/eosbios/stage16/my_discovery_file.yaml",
-    "seed_network_http_address":"http://stage15.testnets.eoscanada.com"
+    "my_discovery_file":"/data/eos/eosbios/stage20/my_discovery_file.yaml",
+    "seed_network_http_address":"NO_USE"
   },
   "code_hash_compare":{
-    "nodeosd_host":"127.0.0.1:10016",
+    "nodeosd_host":"127.0.0.1:80",
     "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
   }
 }
 
+```
+
+### validator.json - for Ghostbuster / Manual Startup
+```
+nodeosd_host: ip:host for the target network noedeosd ip and http port, for example 127.0.0.1:8888
+snapshot_lines: 0 means check all the accounts; >0 means the number of the accounts to check
+snapshot_url: the HTTP url to download, if eos-bios.enable==true, the snapshot file in ipfs will be used
+eos-bios.enable: false means the target network NOT boosted by eos-bios
+eos-bios.single_boot: whether the target neteork is running by eos-bios boot --single
+eos-bios.seed_network_http_address: the seed network of eos-bios to get the registered producer accounts
+code_hash_compare.nodeosd_host: the node which running the EOSIO mainnet version with system contracts and accounts
+code_hash_compare.accounts: the codehash of account will be compared between nodeosd_host and code_hash_compare.nodeosd_host by /chain/get_code API
+
+For example:
+{
+  "nodeosd_host":"127.0.0.1:81",
+  "snapshot_lines":0,
+  "token_name":"EOS",
+  "snapshot_url":"https://raw.githubusercontent.com/eosauthority/genesis/master/snapshot-files/final/2/snapshot.csv",
+  "eos-bios":{
+    "enable":false,
+    "single_boot":false,
+    "my_discovery_file":"/data/eos/eosbios/stage20/my_discovery_file.yaml",
+    "seed_network_http_address":"NO_USE"
+  },
+  "code_hash_compare":{
+    "nodeosd_host":"127.0.0.1:80",
+    "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
+  }
+}
 ```
 
 ### Validate all
