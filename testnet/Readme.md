@@ -47,26 +47,26 @@ cleos push action eosio.token issue '{"to":"eosio","quantity":"1000000000.0000 E
 #查看账户余额
 cleos get currency balance eosio.token eosio
 ```
-### 9.部署 eosio.EOStem 合约
+### 9.部署 eosio.system 合约
 ```
-cleos set contract eosio /opt/eosio/bin/data-dir/contracts/eosio.EOStem
+cleos set contract eosio /opt/eosio/bin/data-dir/contracts/eosio.system
 ```
 ### 10.创建其他BP账号,账号名称要求12个字节
 ```
-cleos EOStem newaccount --stake-net "1000000.0000 EOS" --stake-cpu "1000000.0000 EOS" --buy-ram 102400  eosio bp1111111111 OWNER_PUBKEY -p eosio
-cleos EOStem newaccount --stake-net "1000000.0000 EOS" --stake-cpu "1000000.0000 EOS" --buy-ram 102400  eosio bp2222222222 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "1000000.0000 EOS" --stake-cpu "1000000.0000 EOS" --buy-ram 102400  eosio bp1111111111 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "1000000.0000 EOS" --stake-cpu "1000000.0000 EOS" --buy-ram 102400  eosio bp2222222222 OWNER_PUBKEY -p eosio
 ```
 ### 11.将其他BP账号注册成块生产者
 ```
-cleos EOStem regproducer bp1111111111 OWNER_PUBKEY http://xxx.xxx
-cleos EOStem regproducer bp2222222222 OWNER_PUBKEY http://xxx.xxx
+cleos system regproducer bp1111111111 OWNER_PUBKEY http://xxx.xxx
+cleos system regproducer bp2222222222 OWNER_PUBKEY http://xxx.xxx
 ```
 ### 12.创建投票账户
 ```
-cleos EOStem newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter1111111 OWNER_PUBKEY -p eosio
-cleos EOStem newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter2222222 OWNER_PUBKEY -p eosio
-cleos EOStem newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter3333333 OWNER_PUBKEY -p eosio
-cleos EOStem newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter4444444 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter1111111 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter2222222 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter3333333 OWNER_PUBKEY -p eosio
+cleos system newaccount --stake-net "10.0000 EOS" --stake-cpu "10.0000 EOS" --buy-ram "0.200 EOS"  eosio voter4444444 OWNER_PUBKEY -p eosio
 ```
 ### 13.向投票账户发放共超过3亿的EOS，要让其他BP出块就需要一共有超过1.5亿的EOS被质押(cpu/ram 单个超过1.5亿)
 ```
@@ -81,19 +81,19 @@ cleos get currency balance eosio.token voter2222222
 ### 14.投票账户进行托管并投票
 ```
 #托管
-cleos EOStem delegatebw voter1111111 voter1111111 "40000000.0000 EOS"  "40000000.0000 EOS" --transfer
-cleos EOStem delegatebw voter2222222 voter2222222 "40000000.0000 EOS"  "40000000.0000 EOS" --transfer
-cleos EOStem delegatebw voter3333333 voter3333333 "50000000.0000 EOS"  "50000000.0000 EOS" --transfer
-cleos EOStem delegatebw voter4444444 voter4444444 "50000000.0000 EOS"  "50000000.0000 EOS" --transfer
+cleos system delegatebw voter1111111 voter1111111 "40000000.0000 EOS"  "40000000.0000 EOS" --transfer
+cleos system delegatebw voter2222222 voter2222222 "40000000.0000 EOS"  "40000000.0000 EOS" --transfer
+cleos system delegatebw voter3333333 voter3333333 "50000000.0000 EOS"  "50000000.0000 EOS" --transfer
+cleos system delegatebw voter4444444 voter4444444 "50000000.0000 EOS"  "50000000.0000 EOS" --transfer
 #投票
-cleos EOStem voteproducer prods voter1111111 bp1111111111 bp2222222222
-cleos EOStem voteproducer prods voter2222222 bp1111111111 bp2222222222
-cleos EOStem voteproducer prods voter3333333 bp1111111111 bp2222222222
-cleos EOStem voteproducer prods voter4444444 bp1111111111 bp2222222222
+cleos system voteproducer prods voter1111111 bp1111111111 bp2222222222
+cleos system voteproducer prods voter2222222 bp1111111111 bp2222222222
+cleos system voteproducer prods voter3333333 bp1111111111 bp2222222222
+cleos system voteproducer prods voter4444444 bp1111111111 bp2222222222
 #查看投票账户信息
 cleos get table eosio eosio voters
 #查看连上区块生产者
-cleos EOStem listproducers
+cleos system listproducers
 ```
 ### 15.创建secondnode、thirdnode 目录并初始化配置文件
 ```
