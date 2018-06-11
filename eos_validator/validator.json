@@ -1,5 +1,5 @@
 {
-  "nodeosd_host":"127.0.0.1:81",
+  "nodeosd_host":"127.0.0.1:80",
   "snapshot_lines":0,
   "token_name":"EOS",
   "snapshot_url":"https://raw.githubusercontent.com/eosauthority/genesis/master/snapshot-files/final/2/snapshot.csv",
@@ -10,7 +10,7 @@
     "seed_network_http_address":"NO_USE"
   },
   "code_hash_compare":{
-    "nodeosd_host":"127.0.0.1:80",
+    "nodeosd_host":"128.1.135.109:38888",
     "accounts":["eosio","eosio.msig","eosio.token","eosio.ram","eosio.ramfee","eosio.stake","eosio.names","eosio.saving","eosio.bpay","eosio.vpay"]
   }
 }

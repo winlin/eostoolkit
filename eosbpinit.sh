@@ -15,13 +15,8 @@ INSTALL_APPS=(
     "supervisor"
     "wireguard"
     "certbot"
-    "python3-setuptools"
     "python-setuptools"
-    "python3.6"
-    "python3.6-dev"
     "python-dev"
-    "python3.6-gdbm"
-    "python3-pip"
     "libssl-dev"
     )
 
@@ -98,6 +93,7 @@ function pull_eostoolkit() {
 }
 
 function init_host() {
+    sudo apt-get update
     echo ">>>>>>>>>>> install GPG Keys"
     for item in "${GPG_KEYS[@]}"; do
         curl -fsSL "$item" | sudo apt-key add -
