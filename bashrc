@@ -99,3 +99,5 @@ fi
 #fi
 
 alias cleos='cleos -u http://localhost:$NODEOSPORT --wallet-url http://localhost:$WALLETPORT'
+alias enucli='enucli -u http://localhost:$NODEOSPORT --wallet-url http://localhost:$WALLETPORT'
+alias dlog='sudo docker-compose logs -t -f'
