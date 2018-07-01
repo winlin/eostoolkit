@@ -17,8 +17,6 @@ NODEOSPORT=80
 WALLETPORT=8888
 CLICMD="sudo docker-compose exec -T ${DOCKERSNAME} ${CLI} -u http://localhost:${NODEOSPORT} --wallet-url http://localhost:${WALLETPORT}"
 
-calc(){ awk "BEGIN { print "$*" }"; }
-
 echo $WALLETPASS | $CLICMD wallet unlock
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed to unlock wallet"
@@ -30,8 +28,13 @@ if [ $? -ne 0 ]; then
 fi
 
 balance=`$CLICMD get currency balance $TOKENSC $PRODUCER`
+if [ -z "${balance// }" ]; then
+  echo "WARNING: balance is empty, so will exist this time"
+  exit 0
+fi
+
 ary=(${balance// / })
-halfnumber=`calc $ary/2.0`
+halfnumber=`echo "$ary/2.0" | bc`
 number=""
 printf -v number "%.04f $TOKEN" $halfnumber
 echo "balance:$balance $number"
