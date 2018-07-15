@@ -1,1 +1,1 @@
-0 0 * * * cd /script_directory; /bin/bash claim.sh  
+0 1 * * * cd /script_directory; /bin/bash claim.sh  

@@ -98,5 +98,5 @@ fi
 #    . /etc/bash_completion
 #fi
 
-alias cleos='cleos -u http://localhost:$NODEOSPORT --wallet-url http://localhost:$WALLETPORT'
-alias enucli='enucli -u http://localhost:$NODEOSPORT --wallet-url http://localhost:$WALLETPORT'
+alias cleos='cleos -u http://127.0.0.1:$NODEOSPORT --wallet-url http://127.0.0.1:$WALLETPORT'
+alias enucli='enucli -u http://127.0.0.1:$NODEOSPORT --wallet-url http://127.0.0.1:$WALLETPORT'
