@@ -1,5 +1,8 @@
 # bpmonitor.py 
-#### is used to monitor the rank of bpaccount and calculate the rewards everyday then save into ```reward_output``` file.
+### Functions:
+- Monitor the rank of bp account and send notification message
+- Send warning message when not create blocks in 21th
+- Calculate the rewards everyday and save into ```reward_output``` file.
 
 ### Implementation:
 In the config file, we can supply several API endpoints to query the infomation from the EOS mainnet. Several API endpoints can avoid single point of failure and deferred blocks synchronization. Every endpoint will create a thread and check with mainnet periodically. 
