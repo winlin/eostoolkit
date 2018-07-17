@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#
+#####################################
+#         Winlin@EOSBIXIN           #
+#####################################
+
 from __future__ import unicode_literals
 import os
 import sys

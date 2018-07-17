@@ -1,0 +1,10 @@
+{
+    "interval":15,
+    "notify_interval":60,
+    "phones":["18510209365"],
+    "http_urls":["http://mars.fn.eosbixin.com:80","http://mainnet.eoscanada.com:80","http://119.254.15.39:8888"],
+    "bpaccount":"eosbixinboot",
+    "reward_output":"./reward_daily.txt",
+    "accessid":"",
+    "accessidkey":""
+}

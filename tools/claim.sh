@@ -1,4 +1,8 @@
 #!/bin/bash
+#####################################
+#         Winlin@EOSBIXIN           #
+#####################################
+
 if [ ! -f ./docker-compose.yml ]; then
   echo "Please change path into docker-compose directory"
   exit 1
