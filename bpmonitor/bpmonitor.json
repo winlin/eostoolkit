@@ -1,5 +1,4 @@
 {
-    "interval":15,
     "notify_interval":60,
     "phones":["1800000000"],
     "http_urls":["http://mars.fn.eosbixin.com","http://mainnet.eoscanada.com","http://api.eossweden.se"],

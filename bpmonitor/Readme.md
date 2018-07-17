@@ -9,3 +9,11 @@ The rewards calculate by the average vote rate from the last 24 hours.
 The functions have been realized clearly, what you need to do is just rewrite your notification fucntion in ```send_warning()```. The default notification function is using AliSMS service. 
 
 The ```bpmonitor.json``` is easy to be modified and you can add other items by yourself.
+
+### bpmonitor.json 
+```
+notify_interval: Same warning message will not be send in the interval. 
+http_urls: the API endpoints list
+bpaccount: the watched bp account 
+reward_output: the file to save daily rewards
+```
