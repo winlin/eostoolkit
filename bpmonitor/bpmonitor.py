@@ -34,7 +34,28 @@ def send_warning(msg, config_dict):
     '''
     # replace with yourself warning function 
     send_alisms(msg, config_dict)
+    send_dingding_msg(msg)
     
+# Send Dingtalk
+def send_dingding_msg(msg, config_dict):
+    headers = {
+        'Content-Type': "application/json"
+    }
+    url = "https://oapi.dingtalk.com/robot/send"
+    querystring = {"access_token":config_dict['dtalk_access_token'}
+    content = {
+        "msgtype": "text",
+        "text": {
+            "content": msg
+        }
+    }
+    try:
+        response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=3)
+        print 'dingding send message:', msg, response.text
+    except Exception as e:
+        print 'get_current_bp get exception:', e
+        print traceback.print_exc()
+
 # Send SMS
 def send_alisms(msg, config_dict):
     try:
@@ -50,7 +71,7 @@ def send_alisms(msg, config_dict):
         smsRequest = SendSmsRequest.SendSmsRequest()
         smsRequest.set_TemplateCode(config_dict['template_code'])
         template_param = '{"timestamp":"%s","account":"%s","offlinetime":"","message":"%s"}' % (
-            second2_str24h(time.time()), config_dict['bpaccount'], msg
+            second2_str24h(time.time(), fmt="%H:%M:%S"), config_dict['bpaccount'], msg[:20]
         )
         smsRequest.set_TemplateParam(template_param)
         smsRequest.set_OutId(uuid.uuid1())
@@ -174,6 +195,7 @@ def main(config_dict):
     global g_stop_thread
     status_dict = {}
     threadlist = []
+
     for host in config_dict['http_urls']:
         th = Thread(target=check_rotating, args=(host, status_dict, config_dict))
         threadlist.append(th)
