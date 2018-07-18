@@ -28,13 +28,14 @@ except Exception as err:
     raise err
 
 # Just re-write yourself warning function body, nothing else need to be change.
-def send_warning(msg, config_dict):
+def send_warning(msg, config_dict, sms_flag):
     ''' msg: the message need to send 
         config_dict: the configures read from the bpmonitor.json
     '''
     # replace with yourself warning function 
-    send_alisms(msg, config_dict)
-    send_dingding_msg(msg)
+    send_dingding_msg(msg, config_dict)
+    if sms_flag:
+        send_mobile_msg(msg, config_dict)
     
 # Send Dingtalk
 def send_dingding_msg(msg, config_dict):
@@ -42,7 +43,7 @@ def send_dingding_msg(msg, config_dict):
         'Content-Type': "application/json"
     }
     url = "https://oapi.dingtalk.com/robot/send"
-    querystring = {"access_token":config_dict['dtalk_access_token'}
+    querystring = {"access_token":config_dict['dtalk_access_token']}
     content = {
         "msgtype": "text",
         "text": {
@@ -52,6 +53,29 @@ def send_dingding_msg(msg, config_dict):
     try:
         response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=3)
         print 'dingding send message:', msg, response.text
+    except Exception as e:
+        print 'get_current_bp get exception:', e
+        print traceback.print_exc()
+
+def send_mobile_msg(msg, config_dict):
+    sign = '请及时处理。【EOS主网运维】'
+    querystring = {"action": "send",
+                   "userid": config_dict['yqq_userid'],
+                   "account": config_dict['yqq_account'],
+                   "password": config_dict['yqq_password'],
+                   "mobile": ",".join(config_dict['phones']),
+                   "content": msg + sign,
+                   "sendTime": "", "extno": ""}
+
+    headers = {
+        'Cache-Control': "no-cache",
+        'Postman-Token': "0bca5e96-cd0e-4768-8b44-112ec66336ea"
+    }
+
+    try:
+        res = requests.request("GET", config_dict['yqq_smsurl'], headers=headers, params=querystring)
+        rj = json.loads(res.content)
+        print rj['returnstatus']
     except Exception as e:
         print 'get_current_bp get exception:', e
         print traceback.print_exc()
@@ -86,14 +110,14 @@ def send_alisms(msg, config_dict):
 g_stop_thread = False
 g_notify_cache = {}
 g_http_timeout = 1.5
-def notify_users(msg, config_dict):
+def notify_users(msg, config_dict, sms_flag=False):
     global g_notify_cache
     try:
         msg_hash = hashlib.md5(msg).hexdigest()
         if msg_hash in g_notify_cache and (time.time() - g_notify_cache[msg_hash] < config_dict['notify_interval']):
             return
         g_notify_cache[msg_hash] = time.time()
-        send_warning(msg, config_dict)
+        send_warning(msg, config_dict, sms_flag)
     except Exception as e:
         print 'get_bpinfo get exception:', e
         print traceback.print_exc()
@@ -156,21 +180,21 @@ def check_rotating(host, status_dict, config_dict):
             # check the bp rank
             bpinfo, err = get_bpinfo(host, config_dict['bpaccount'])
             if err:
-                notify_users(err, config_dict)
+                notify_users(err, config_dict, sms_flag=False)
                 continue
             if int(time.time()) % 3600 == 0:  # store the vote rate per hour
                 status_dict[host]['vote_rates_24h'].append(bpinfo['vote_rate'])
             status_dict[host]['rank_last_2'].append(bpinfo['rank'])
             if len(status_dict[host]['rank_last_2'])>1 and status_dict[host]['rank_last_2'][0] != status_dict[host]['rank_last_2'][1]:
                 msg = "Rank changd: from %d to %d" % (status_dict[host]['rank_last_2'][1], status_dict[host]['rank_last_2'][0])
-                notify_users(msg, config_dict)
+                notify_users(msg, config_dict, sms_flag=True)
 
             # update monitor account last create block timestamp
             if bpinfo['rank'] < 22 and int(time.time()) % 3 == 0:   # get create block account per 3 secs
                 curbp, err = get_current_bp(host)
                 print second2_str24h(time.time()), curbp, host
                 if err:
-                    notify_users(err, config_dict)
+                    notify_users(err, config_dict, sms_flag=False)
                 if curbp == config_dict['bpaccount']:
                     status_dict[host]['last_cblock_time'] = time.time()
         except Exception as e:
@@ -225,7 +249,7 @@ def main(config_dict):
         if need_check_cblock and time.time() - latest_cblock_time > 130:  # rotate period is 120 secs
             msg = "Long time NO create blocks, lasttime: %s " % second2_str24h(latest_cblock_time)
             print second2_str24h(time.time()), msg
-            notify_users(msg, config_dict)
+            notify_users(msg, config_dict, sms_flag=True)
     
     for th in threadlist:
         th.join()

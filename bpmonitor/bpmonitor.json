@@ -6,5 +6,9 @@
     "reward_output":"./reward_daily.txt",
     "accessid":"",
     "accessidkey":"",
-    "dtalk_access_token":""
+    "dtalk_access_token":"",
+    "yqq_userid":"",
+    "yqq_account":"",
+    "yqq_password":"",
+    "yqq_smsurl":""
 }
