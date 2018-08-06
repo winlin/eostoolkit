@@ -51,6 +51,11 @@ cleos get currency balance eosio.token eosio
 ```
 cleos set contract eosio /opt/eosio/bin/data-dir/contracts/eosio.system
 ```
+### 10.eosio.msig 账户设置成特权账户
+```
+cleos push action eosio setpriv '{"account": "eosio.msig", "is_priv": 1}' -p eosio
+```
+
 ### 10.创建其他BP账号,账号名称要求12个字节
 ```
 cleos system newaccount --stake-net "1000000.0000 EOS" --stake-cpu "1000000.0000 EOS" --buy-ram 102400  eosio bp1111111111 OWNER_PUBKEY -p eosio
@@ -114,6 +119,9 @@ cp firstnode/config.ini firstnode/docker-compose.yml fisetnode/genesis.json thir
     * p2p-peer-address
 
 做完上面操作之后 eosio 会停止出块，由新创建的BP进行出块，对应的示例配置文件可以在当前目录下查看.
+
+也可以参考 CryptoKylin 的启动流程：
+https://github.com/cryptokylin/CryptoKylin-Testnet/blob/master/boot.md
 
 *本过程参考了Zhaoyu [<<register-producer-and-vote-dawn-4.0.md>>](https://gist.github.com/JohnnyZhao/147636a325118ccc51da48e9e8e68de7)以及[EOS.HOST](https://eos.host/)团队的提供的友情支持。*
 
