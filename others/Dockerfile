@@ -12,9 +12,9 @@ FROM ubuntu:18.04
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install vim net-tools lsof wget curl
 RUN wget -O /root/.bashrc https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/bashrc
-RUN mkdir /root/enumivo-wallet
+RUN mkdir /root/enuwallet
 RUN mkdir -p /opt/enumivo/bin
-RUN wget -O /root/enumivo-wallet/config.ini https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/others/wallet_config.ini
+RUN wget -O /root/enuwallet/config.ini https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/others/wallet_config.ini
 RUN wget -O /opt/enumivo/bin/enunoded.sh https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/others/enunoded.sh
 RUN chmod a+x /opt/enumivo/bin/enunoded.sh
 
