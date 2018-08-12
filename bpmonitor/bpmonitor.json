@@ -1,8 +1,8 @@
 {
     "notify_interval":60,
-    "phones":["1800000000"],
     "http_urls":["http://mars.fn.eosbixin.com","http://mainnet.eoscanada.com","http://api.eossweden.se"],
     "bpaccount":"eosbixinboot",
+    "notify_phones":{"*":["+861850000000","+861850000000"],"eosbixinboot":["+861850000000"],"eoslaomaocom":["+861850000000"]},
     "reward_output":"./reward_daily.txt",
     "accessid":"",
     "accessidkey":"",
@@ -10,5 +10,6 @@
     "yqq_userid":"",
     "yqq_account":"",
     "yqq_password":"",
-    "yqq_smsurl":""
+    "yqq_smsurl":"",
+    "telegram":{"token":"xxxxx","chat_id":"@xxxxxxx"}
 }
