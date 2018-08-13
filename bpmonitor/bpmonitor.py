@@ -156,9 +156,9 @@ def get_bp_order(host):
             if index>20:
                 break
             bps_rank.append(item["owner"])
-            if time.time() - int(item['last_claim_time'])/1000000 > 3600*24.2:
+            if time.time() - int(item['last_claim_time'])/1000000 > 3600*26:
                 #daily claim delay
-                msg = "%s claimreward delay for more than 12min" % (item["owner"])
+                msg = "%s claimreward delayed for more than 2hours" % (item["owner"])
                 notify_users(msg, config_dict, sms_flag=True)
         return sorted(bps_rank), None
     except Exception as e:
