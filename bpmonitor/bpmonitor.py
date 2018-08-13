@@ -25,8 +25,8 @@ def send_warning(msg, config_dict, sms_flag):
         config_dict: the configures read from the bpmonitor.json
     '''
     # replace with yourself warning function 
-    if sms_flag:
-       send_mobile_msg(msg, config_dict)
+    # if sms_flag:
+    #    send_mobile_msg(msg, config_dict)
     send_dingding_msg(msg, config_dict)
     send_telegram_msg(msg, config_dict)
     
@@ -254,7 +254,7 @@ def check_rotating(host, status_dict, config_dict):
                 msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
 
-            if curbp_bcount<11 and cur_lib_num-start_lib_num>11:
+            if curbp_bcount<10 and cur_lib_num-start_lib_num>11:
                 msg = "%s [%d - %d] missed %d blocks " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount)
                 notify_users(msg, config_dict, sms_flag=True)
             curbp_bcount = 1
