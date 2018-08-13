@@ -251,11 +251,11 @@ def check_rotating(host, status_dict, config_dict):
         
             legal, legal_bp = check_nextbp_legal(bp_order, pre_bp, cur_bp) 
             if not legal:
-                msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num-1)
+                msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
 
             if curbp_bcount<11 and cur_lib_num-start_lib_num>11:
-                msg = "%s [%d - %d] miss %d blocks " % (pre_bp, cur_lib_num-2-curbp_bcount, cur_lib_num-1, 12-curbp_bcount)
+                msg = "%s [%d - %d] missed %d blocks " % (pre_bp, cur_lib_num-2-curbp_bcount, cur_lib_num-1, 12-curbp_bcount)
                 notify_users(msg, config_dict, sms_flag=True)
             curbp_bcount = 1
             pre_bp = cur_bp
