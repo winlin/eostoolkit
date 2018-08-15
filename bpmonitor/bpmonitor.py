@@ -20,15 +20,16 @@ import simplejson as json
 from decimal import Decimal
 
 # Just re-write yourself warning function body, nothing else need to be change.
-def send_warning(msg, config_dict, sms_flag):
+def send_warning(msg, config_dict, sms_flag=False, telegram_flag=True):
     ''' msg: the message need to send 
         config_dict: the configures read from the bpmonitor.json
     '''
     # replace with yourself warning function 
-    # if sms_flag:
-    #    send_mobile_msg(msg, config_dict)
     send_dingding_msg(msg, config_dict)
-    send_telegram_msg(msg, config_dict)
+    if sms_flag:
+        send_mobile_msg(msg, config_dict)
+    if telegram_flag:
+        send_telegram_msg(msg, config_dict)
     
 # Send Dingtalk
 def send_dingding_msg(msg, config_dict):
@@ -45,7 +46,7 @@ def send_dingding_msg(msg, config_dict):
     }
     try:
         response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=3)
-        print 'dingding send message:', msg, response.text
+        print 'dingding send message:', msg #, response.text
     except Exception as e:
         print 'get_current_bp get exception:', e
         print traceback.print_exc()
@@ -72,24 +73,18 @@ def send_mobile_msg(msg, config_dict):
             send_phones.extend(config_dict['notify_phones'][key])
             continue
     send_phones = set(send_phones)
-    print 'Send to :', send_phones
-    sign = ' [EOSBIXIN]'
-    querystring = {"action": "send",
-                   "userid": config_dict['yqq_userid'],
-                   "account": config_dict['yqq_account'],
-                   "password": config_dict['yqq_password'],
-                   "mobile": ",".join(send_phones),
-                   "content": msg + sign,
-                   "sendTime": "", "extno": ""}
-    headers = {
-        'Cache-Control': "no-cache",
+    param = {
+        'apikey':config_dict['sms']['apikey'],
+        'text':config_dict['sms']['tmpl'] + msg,
+        'mobile':','.join(send_phones)
     }
+    print 'Send to: ', send_phones, msg
+    headers = {"Accept":"application/json;charset=utf-8;","Content-Type":"application/x-www-form-urlencoded;charset=utf-8;"}
     try:
-        res = requests.request("GET", config_dict['yqq_smsurl'], headers=headers, params=querystring)
-        rj = json.loads(res.content)
-        print rj['returnstatus']
+        res = requests.post(config_dict['sms']['batch_send_url'], data=param, headers=headers, timeout=5.0)
+        print res.text
     except Exception as e:
-        print 'get_current_bp get exception:', e
+        print 'send_mobile_msg get exception:', e
         print traceback.print_exc()
 
 ############################################
@@ -99,7 +94,7 @@ g_notify_cache = {}
 HTTP_TIMEOUT = 6
 HTTP_AGENT = {'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"}
 
-def notify_users(msg, config_dict, sms_flag=False):
+def notify_users(msg, config_dict, sms_flag=False, telegram_flag=True):
     global g_notify_cache
     try:
         msg_hash = hashlib.md5(msg).hexdigest()
@@ -107,7 +102,7 @@ def notify_users(msg, config_dict, sms_flag=False):
             return
         g_notify_cache[msg_hash] = time.time()
         print msg
-        send_warning(msg, config_dict, sms_flag)
+        send_warning(msg, config_dict, sms_flag, telegram_flag)
     except Exception as e:
         print 'get_bpinfo get exception:', e
         print traceback.print_exc()
@@ -156,9 +151,10 @@ def get_bp_order(host):
             if index>20:
                 break
             bps_rank.append(item["owner"])
-            if time.time() - int(item['last_claim_time'])/1000000 > 3600*26:
+            unclaim_hours = (time.time() - int(item['last_claim_time'])/1000000)/3600.0
+            if unclaim_hours > 26:
                 #daily claim delay
-                msg = "%s claimreward delayed for more than 2hours" % (item["owner"])
+                msg = "%s claimreward delayed for more than %.1f hours" % (item["owner"], unclaim_hours)
                 notify_users(msg, config_dict, sms_flag=True)
         return sorted(bps_rank), None
     except Exception as e:
@@ -192,14 +188,19 @@ def check_nextbp_legal(bp_order, pre_bp, cur_bp):
     return True, None
 
 def check_bprank_change(pre_rank, cur_rank, config_dict):
+    print pre_rank, '\n', cur_rank
     outrank_bps = set(pre_rank) - set(cur_rank)
     for bp in outrank_bps:
         msg = "%s out rank of %d" % (bp, len(cur_rank))
         notify_users(msg, config_dict, sms_flag=True)
 
-    for bp in cur_rank:
+    for index,bp in enumerate(cur_rank):
+        if bp not in pre_rank:
+            msg = "%s rank changed into %d" % (bp, index+1)
+            notify_users(msg, config_dict, sms_flag=True)
+            continue
         if cur_rank.index(bp) != pre_rank.index(bp):
-            msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp), cur_rank.index(bp))
+            msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
             notify_users(msg, config_dict, sms_flag=True)
 
 def check_rotating(host, status_dict, config_dict):
@@ -214,7 +215,7 @@ def check_rotating(host, status_dict, config_dict):
         try:
             curbp_info, err = get_current_bp(host)
             if err:
-                notify_users(err, config_dict, sms_flag=False)
+                notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
                 rotate_time = time.time()
                 continue
             lib_num = curbp_info['last_irreversible_block_num']
@@ -227,7 +228,7 @@ def check_rotating(host, status_dict, config_dict):
 
             block_bpinfo, err = get_block_producer(host, cur_lib_num)
             if err:
-                notify_users(err, config_dict, sms_flag=False)
+                notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
                 rotate_time = time.time()
                 continue
             cur_bp = block_bpinfo['producer']
@@ -236,7 +237,7 @@ def check_rotating(host, status_dict, config_dict):
             if pre_bp != cur_bp:
                 bp_order, err = get_bp_order(host)
                 if err:
-                    notify_users(err, config_dict, sms_flag=False)
+                    notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
                     rotate_time = time.time() + 1.0
                     continue
                 if not pre_bprank:

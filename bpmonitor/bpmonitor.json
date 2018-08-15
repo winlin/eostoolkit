@@ -11,5 +11,6 @@
     "yqq_account":"",
     "yqq_password":"",
     "yqq_smsurl":"",
-    "telegram":{"token":"xxxxx","chat_id":"@xxxxxxx"}
+    "telegram":{"token":"xxxxx","chat_id":"@xxxxxxx"},
+    "sms":{"apikey":"", "tmpl":"", "batch_send_url":""}
 }
