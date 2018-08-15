@@ -76,6 +76,8 @@ def send_mobile_msg(msg, config_dict):
             send_phones.extend(config_dict['notify_phones'][key])
             continue
     send_phones = set(send_phones)
+    if not send_phones:
+        return
     param = {
         'apikey':config_dict['sms']['apikey'],
         'text':config_dict['sms']['tmpl'] + msg,
@@ -101,7 +103,8 @@ def notify_users(msg, config_dict, sms_flag=False, telegram_flag=True):
     global g_notify_cache
     try:
         msg_hash = hashlib.md5(msg).hexdigest()
-        if msg_hash in g_notify_cache and (time.time() - g_notify_cache[msg_hash] < config_dict['notify_interval']):
+        silent_time = config_dict['notify_interval']*6 if sms_flag else config_dict['notify_interval']
+        if msg_hash in g_notify_cache and (time.time() - g_notify_cache[msg_hash] < silent_time):
             return
         g_notify_cache[msg_hash] = time.time()
         print msg
@@ -185,7 +188,7 @@ def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
     try:
         sorted_bprank = sorted(bp_rank)
         if sorted_bprank[sorted_bprank.index(pre_bp)+1] != cur_bp:
-            return False, bp_rank[bp_rank.index(pre_bp)+1]
+            return False, sorted_bprank[sorted_bprank.index(pre_bp)+1]
     except Exception as e:
         pass
     # The first 21 bps order may change, so here just assume legal
