@@ -19,6 +19,9 @@ from threading import Thread
 import simplejson as json
 from decimal import Decimal
 
+reload(sys)  # Reload does the trick!
+sys.setdefaultencoding('UTF8')
+
 # Just re-write yourself warning function body, nothing else need to be change.
 def send_warning(msg, config_dict, sms_flag=False, telegram_flag=True):
     ''' msg: the message need to send 
