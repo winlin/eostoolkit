@@ -135,7 +135,7 @@ def get_current_bp(host):
         print traceback.print_exc()
     return None, 'get_current_bp get exception:' + host
 
-def get_bp_order(host):
+def get_bp_rank(host):
     try:
         top_limit = 30
         data = '{ "json": true, "lower_bound": "", "limit": %d}' % top_limit
@@ -156,12 +156,12 @@ def get_bp_order(host):
                 #daily claim delay
                 msg = "%s claimreward delayed for more than %.1f hours" % (item["owner"], unclaim_hours)
                 notify_users(msg, config_dict, sms_flag=True)
-        return sorted(bps_rank), None
+        return bps_rank, None
     except Exception as e:
         #pass
-        print 'get_bp_order get exception:', e
+        print 'get_bp_rank get exception:', e
         print traceback.print_exc()
-    return None, 'get_bp_order get exception:' + host 
+    return None, 'get_bp_rank get exception:' + host 
 
 def get_block_producer(host, num):
     try:
@@ -178,10 +178,11 @@ def get_block_producer(host, num):
         #print traceback.print_exc()
     return None, 'get_block_producer get exception:' + host 
 
-def check_nextbp_legal(bp_order, pre_bp, cur_bp):
+def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
     try:
-        if bp_order[bp_order.index(pre_bp)+1] != cur_bp:
-            return False, bp_order[bp_order.index(pre_bp)+1]
+        sorted_bprank = sorted(bp_rank)
+        if sorted_bprank[sorted_bprank.index(pre_bp)+1] != cur_bp:
+            return False, bp_rank[bp_rank.index(pre_bp)+1]
     except Exception as e:
         pass
     # The first 21 bps order may change, so here just assume legal
@@ -208,7 +209,7 @@ def check_rotating(host, status_dict, config_dict):
     if host not in status_dict:
         status_dict[host] = {'vote_rates_24h': collections.deque(maxlen=24), 'rank_last_2':collections.deque(maxlen=2), 'last_cblock_time':time.time()}
     
-    pre_bp, cur_bp, bp_order = None, None, None
+    pre_bp, cur_bp, bp_rank = None, None, None
     curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
     rotate_time, pre_bprank = time.time(), None
     while not g_stop_thread:
@@ -235,22 +236,22 @@ def check_rotating(host, status_dict, config_dict):
             if not pre_bp:
                 pre_bp = cur_bp
             if pre_bp != cur_bp:
-                bp_order, err = get_bp_order(host)
+                bp_rank, err = get_bp_rank(host)
                 if err:
                     notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
                     rotate_time = time.time() + 1.0
                     continue
                 if not pre_bprank:
-                    pre_bprank = bp_order
-                check_bprank_change(pre_bprank, bp_order, config_dict)
-                pre_bprank = bp_order
+                    pre_bprank = bp_rank
+                check_bprank_change(pre_bprank, bp_rank, config_dict)
+                pre_bprank = bp_rank
 
             cur_lib_num += 1
             if pre_bp == cur_bp:
                 curbp_bcount += 1
                 continue
         
-            legal, legal_bp = check_nextbp_legal(bp_order, pre_bp, cur_bp) 
+            legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp) 
             if not legal:
                 msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
