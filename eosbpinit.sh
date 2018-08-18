@@ -19,6 +19,7 @@ INSTALL_APPS=(
     "python-dev"
     "libssl-dev"
     "hexcurse"
+    "ntpstat"
     )
 
 PIP_APPS=(

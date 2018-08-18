@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  enuwallet:
+    image: winlin/enu:v1.2.1
+    command: /opt/enumivo/bin/enuwallet --wallet-dir /opt/enumivo/bin/data-dir --http-server-address=0.0.0.0:8888
+    hostname: enuwallet
+    ports:
+      - 8888:8888
+    environment:
+      - WALLETPORT=8888
+    volumes:
+      - /data/enu/enuwallet:/opt/enumivo/bin/data-dir
