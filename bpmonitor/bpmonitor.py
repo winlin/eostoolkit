@@ -175,7 +175,6 @@ def get_bp_rank(host):
             notify_users(msg, config_dict, sms_flag=True)
         return bps_rank, None
     except Exception as e:
-        #pass
         print 'get_bp_rank get exception:', e
         print traceback.print_exc()
     return None, 'get_bp_rank get exception:' + host 
@@ -190,9 +189,8 @@ def get_block_producer(host, num):
         print 'Get block %d :%s' % (num, bpline)
         return json.loads(bpline), None
     except Exception as e:
-        pass
-        #print 'get_block_producer get exception:', e
-        #print traceback.print_exc()
+        print 'get_block_producer get exception:', e
+        print traceback.print_exc()
     return None, 'get_block_producer get exception:' + host 
 
 def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
@@ -232,7 +230,7 @@ def check_rotating(host, status_dict, config_dict):
     pre_bp, cur_bp, bp_rank = None, None, None
     curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
     rotate_time, pre_bprank = time.time(), None
-    ignore_timestamp = time.time()
+    ignore_timestamp = time.time() - 180
     while not g_stop_thread:
         try:
             curbp_info, err = get_current_bp(host)
@@ -276,7 +274,6 @@ def check_rotating(host, status_dict, config_dict):
         
             legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp) 
             cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4]) 
-            print 'legal:', legal, 'ignore_timestamp-cur_block_timestamp:', ignore_timestamp-cur_block_timestamp
             if not legal and ignore_timestamp < cur_block_timestamp:
                 msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
