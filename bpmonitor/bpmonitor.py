@@ -15,6 +15,8 @@ import argparse
 import traceback
 import collections
 import hashlib
+from calendar import timegm
+from datetime import datetime
 from threading import Thread
 import simplejson as json
 from decimal import Decimal
@@ -30,9 +32,9 @@ def send_warning(msg, config_dict, sms_flag=False, telegram_flag=True):
     # replace with yourself warning function 
     send_dingding_msg(msg, config_dict)
     if sms_flag:
-        send_mobile_msg(msg, config_dict)
+       send_mobile_msg(msg, config_dict)
     if telegram_flag:
-        send_telegram_msg(msg, config_dict)
+       send_telegram_msg(msg, config_dict)
     
 # Send Dingtalk
 def send_dingding_msg(msg, config_dict):
@@ -123,8 +125,13 @@ def second2_str24h(cur_second, fmt="%Y-%m-%d %H:%M:%S", utc=False):
         return time.strftime(fmt, time.localtime(cur_second))
     return time.strftime(fmt, time.gmtime(cur_second))
 
-def datestr24h_2second(date_str):
-    return int(time.mktime(time.strptime(date_str, "%Y-%m-%dT%H:%M:%S")))
+def datestr24h_2second(date_str, timezone="UTC"):
+    return timegm(
+        time.strptime(
+            date_str + timezone,
+            '%Y-%m-%dT%H:%M:%S%Z'
+        )
+    )
 
 def get_current_bp(host):
     try:
@@ -201,7 +208,9 @@ def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
 def check_bprank_change(pre_rank, cur_rank, config_dict):
     print pre_rank, '\n', cur_rank
     outrank_bps = set(pre_rank) - set(cur_rank)
+    new_schedule_version = False
     for bp in outrank_bps:
+        new_schedule_version = True
         msg = "%s out rank of %d" % (bp, len(cur_rank))
         notify_users(msg, config_dict, sms_flag=True)
 
@@ -213,6 +222,7 @@ def check_bprank_change(pre_rank, cur_rank, config_dict):
         if cur_rank.index(bp) != pre_rank.index(bp):
             msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
             notify_users(msg, config_dict, sms_flag=True)
+    return new_schedule_version
 
 def check_rotating(host, status_dict, config_dict):
     global g_stop_thread
@@ -222,6 +232,7 @@ def check_rotating(host, status_dict, config_dict):
     pre_bp, cur_bp, bp_rank = None, None, None
     curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
     rotate_time, pre_bprank = time.time(), None
+    ignore_timestamp = time.time()
     while not g_stop_thread:
         try:
             curbp_info, err = get_current_bp(host)
@@ -253,7 +264,9 @@ def check_rotating(host, status_dict, config_dict):
                     continue
                 if not pre_bprank:
                     pre_bprank = bp_rank
-                check_bprank_change(pre_bprank, bp_rank, config_dict)
+                new_schedule_version = check_bprank_change(pre_bprank, bp_rank, config_dict)
+                if new_schedule_version:
+                    ignore_timestamp = time.time() + 450
                 pre_bprank = bp_rank
 
             cur_lib_num += 1
@@ -262,11 +275,13 @@ def check_rotating(host, status_dict, config_dict):
                 continue
         
             legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp) 
-            if not legal:
+            cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4]) 
+            print 'legal:', legal, 'ignore_timestamp-cur_block_timestamp:', ignore_timestamp-cur_block_timestamp
+            if not legal and ignore_timestamp < cur_block_timestamp:
                 msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
 
-            if curbp_bcount<11 and cur_lib_num-start_lib_num>11:
+            if ignore_timestamp < cur_block_timestamp and curbp_bcount<11 and cur_lib_num-start_lib_num>11:
                 msg = "%s [%d - %d] missed %d blocks " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount)
                 notify_users(msg, config_dict, sms_flag=True)
             curbp_bcount = 1
@@ -275,7 +290,7 @@ def check_rotating(host, status_dict, config_dict):
             print 'check_rotating get exception:', e
             print traceback.print_exc()
         finally:
-            sleep_time = 2.0 + rotate_time - time.time()
+            sleep_time = 1.0 + rotate_time - time.time()
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
