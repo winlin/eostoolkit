@@ -275,11 +275,11 @@ def check_rotating(host, status_dict, config_dict):
             legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp) 
             cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4]) 
             if not legal and ignore_timestamp < cur_block_timestamp:
-                msg = "%s MIGHT missed 12 blocks after %d" % (legal_bp, cur_lib_num-1)
+                msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
 
             if ignore_timestamp < cur_block_timestamp and curbp_bcount<11 and cur_lib_num-start_lib_num>11:
-                msg = "%s [%d - %d] missed %d blocks " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount)
+                msg = "%s [%d - %d] missed %d blocks. Next is %s " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount, cur_bp)
                 notify_users(msg, config_dict, sms_flag=True)
             curbp_bcount = 1
             pre_bp = cur_bp
