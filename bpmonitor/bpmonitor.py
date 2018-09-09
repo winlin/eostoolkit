@@ -6,6 +6,7 @@
 
 from __future__ import unicode_literals
 import os
+import re
 import sys
 import uuid
 import time
@@ -53,7 +54,7 @@ def send_dingding_msg(msg, config_dict):
         response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=3)
         print 'dingding send message:', msg #, response.text
     except Exception as e:
-        print 'get_current_bp get exception:', e
+        print 'send_dingding_msg get exception:', e
         print traceback.print_exc()
 
 # Send Telegram Bot
@@ -64,7 +65,7 @@ def send_telegram_msg(msg, config_dict):
         result = requests.post(url, param, timeout=5.0)
         print "telegram_alarm send message:", msg, result.text
     except Exception as e:
-        print 'get_current_bp get exception:', e
+        print 'send_telegram_msg get exception:', e
         print traceback.print_exc()
 
 # Send SMS
@@ -141,8 +142,7 @@ def get_current_bp(host):
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call:', get_info, ret.text
             return None, 'get_current_bp failed:' + host
-        result = json.loads(ret.text)
-        return result, None
+        return json.loads(ret.text), None
     except Exception as e:
         print 'get_current_bp get exception:', e
         print traceback.print_exc()
@@ -187,7 +187,18 @@ def get_block_producer(host, num):
                         headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
         bpline = response.text[:64] + '}'
         print 'Get block %d :%s' % (num, bpline)
-        return json.loads(bpline), None
+        match_regxs = {
+            'producer' : '(?<=\"producer\":\")[^\",]*',
+            'timestamp' : '(?<=\"timestamp\":\")[^\",]*',
+            'schedule_version' : '(?<=\"schedule_version\":)[^,]*'
+        }
+        result = {}
+        for key in match_regxs:
+            ret = re.search(match_regxs[key], response.text)
+            if not ret:
+                return None, key + ' failed:' + host
+            result[key] = ret.group(0).strip()
+        return result, None
     except Exception as e:
         print 'get_block_producer get exception:', e
         print traceback.print_exc()
@@ -206,9 +217,7 @@ def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
 def check_bprank_change(pre_rank, cur_rank, config_dict):
     print pre_rank, '\n', cur_rank
     outrank_bps = set(pre_rank) - set(cur_rank)
-    new_schedule_version = False
     for bp in outrank_bps:
-        new_schedule_version = True
         msg = "%s out rank of %d" % (bp, len(cur_rank))
         notify_users(msg, config_dict, sms_flag=True)
 
@@ -220,14 +229,13 @@ def check_bprank_change(pre_rank, cur_rank, config_dict):
         if cur_rank.index(bp) != pre_rank.index(bp):
             msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
             notify_users(msg, config_dict, sms_flag=True)
-    return new_schedule_version
 
 def check_rotating(host, status_dict, config_dict):
     global g_stop_thread
     if host not in status_dict:
         status_dict[host] = {'vote_rates_24h': collections.deque(maxlen=24), 'rank_last_2':collections.deque(maxlen=2), 'last_cblock_time':time.time()}
     
-    pre_bp, cur_bp, bp_rank = None, None, None
+    pre_bp, cur_bp, bp_rank, pre_sch_ver, cur_sch_ver = None, None, None, 0, 0
     curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
     rotate_time, pre_bprank = time.time(), None
     ignore_timestamp = time.time() - 180
@@ -251,10 +259,17 @@ def check_rotating(host, status_dict, config_dict):
                 notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
                 rotate_time = time.time()
                 continue
-            cur_bp = block_bpinfo['producer']
+            cur_bp, cur_sch_ver = block_bpinfo['producer'], block_bpinfo['schedule_version']
             if not pre_bp:
                 pre_bp = cur_bp
+            if not pre_sch_ver:
+                pre_sch_ver = cur_sch_ver
             if pre_bp != cur_bp:
+                if pre_sch_ver != cur_sch_ver:
+                    print 'schedule_version changed:', pre_sch_ver, cur_sch_ver
+                    ignore_timestamp = time.time() + 450
+                pre_sch_ver = cur_sch_ver
+
                 bp_rank, err = get_bp_rank(host)
                 if err:
                     notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
@@ -262,10 +277,7 @@ def check_rotating(host, status_dict, config_dict):
                     continue
                 if not pre_bprank:
                     pre_bprank = bp_rank
-                new_schedule_version = check_bprank_change(pre_bprank, bp_rank, config_dict)
-                if new_schedule_version:
-                    ignore_timestamp = time.time() + 450
-                pre_bprank = bp_rank
+                check_bprank_change(pre_bprank, bp_rank, config_dict)
 
             cur_lib_num += 1
             if pre_bp == cur_bp:
