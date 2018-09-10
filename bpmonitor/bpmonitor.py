@@ -278,6 +278,7 @@ def check_rotating(host, status_dict, config_dict):
                 if not pre_bprank:
                     pre_bprank = bp_rank
                 check_bprank_change(pre_bprank, bp_rank, config_dict)
+                pre_bprank = bp_rank
 
             cur_lib_num += 1
             if pre_bp == cur_bp:
