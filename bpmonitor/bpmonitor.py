@@ -217,18 +217,23 @@ def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
 def check_bprank_change(pre_rank, cur_rank, config_dict):
     print pre_rank, '\n', cur_rank
     outrank_bps = set(pre_rank) - set(cur_rank)
+    rank_changed = False
     for bp in outrank_bps:
+        rank_changed = True
         msg = "%s out rank of %d" % (bp, len(cur_rank))
         notify_users(msg, config_dict, sms_flag=True)
 
     for index,bp in enumerate(cur_rank):
         if bp not in pre_rank:
+            rank_changed = True
             msg = "%s rank changed into %d" % (bp, index+1)
             notify_users(msg, config_dict, sms_flag=True)
             continue
         if cur_rank.index(bp) != pre_rank.index(bp):
+            rank_changed = True
             msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
             notify_users(msg, config_dict, sms_flag=True)
+    return rank_changed
 
 def check_rotating(host, status_dict, config_dict):
     global g_stop_thread
@@ -265,11 +270,6 @@ def check_rotating(host, status_dict, config_dict):
             if not pre_sch_ver:
                 pre_sch_ver = cur_sch_ver
             if pre_bp != cur_bp:
-                if pre_sch_ver != cur_sch_ver:
-                    print 'schedule_version changed:', pre_sch_ver, cur_sch_ver
-                    ignore_timestamp = time.time() + 450
-                pre_sch_ver = cur_sch_ver
-
                 bp_rank, err = get_bp_rank(host)
                 if err:
                     notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
@@ -277,8 +277,12 @@ def check_rotating(host, status_dict, config_dict):
                     continue
                 if not pre_bprank:
                     pre_bprank = bp_rank
-                check_bprank_change(pre_bprank, bp_rank, config_dict)
+                rank_changed = check_bprank_change(pre_bprank, bp_rank, config_dict)
                 pre_bprank = bp_rank
+                if pre_sch_ver != cur_sch_ver or rank_changed:
+                    print 'schedule_version changed:', pre_sch_ver, cur_sch_ver, rank_changed
+                    ignore_timestamp = time.time() + 450
+                pre_sch_ver = cur_sch_ver
 
             cur_lib_num += 1
             if pre_bp == cur_bp:
