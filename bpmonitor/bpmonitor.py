@@ -280,7 +280,7 @@ def check_rotating(host, status_dict, config_dict):
                 rank_changed = check_bprank_change(pre_bprank, bp_rank, config_dict)
                 pre_bprank = bp_rank
                 if pre_sch_ver != cur_sch_ver or rank_changed:
-                    print 'schedule_version changed:', pre_sch_ver, cur_sch_ver, rank_changed
+                    print '21th bp rank changed:pre_sch_ver:%s cur_sch_ver:%s rank_changed:%s' % (pre_sch_ver, cur_sch_ver, rank_changed)
                     ignore_timestamp = time.time() + 450
                 pre_sch_ver = cur_sch_ver
 
