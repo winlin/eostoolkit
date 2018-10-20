@@ -16,6 +16,7 @@ import argparse
 import traceback
 import collections
 import hashlib
+import re
 from calendar import timegm
 from datetime import datetime
 from threading import Thread
@@ -27,15 +28,17 @@ sys.setdefaultencoding('UTF8')
 
 # Just re-write yourself warning function body, nothing else need to be change.
 def send_warning(msg, config_dict, sms_flag=False, telegram_flag=True):
-    ''' msg: the message need to send 
+    ''' msg: the message need to send
         config_dict: the configures read from the bpmonitor.json
     '''
-    # replace with yourself warning function 
+    # replace with yourself warning function
     send_dingding_msg(msg, config_dict)
+    send_pagerduty_msg(msg, config_dict)
+
     if sms_flag:
        send_mobile_msg(msg, config_dict)
     if telegram_flag:
-       send_telegram_msg(msg, config_dict)
+        send_telegram_msg(msg, config_dict)
     
 # Send Dingtalk
 def send_dingding_msg(msg, config_dict):
@@ -95,6 +98,53 @@ def send_mobile_msg(msg, config_dict):
         print 'send_mobile_msg get exception:', e
         print traceback.print_exc()
 
+# Send PagerDuty
+def send_pagerduty_msg(msg, config_dict):
+    send_pagerduties = []
+    for key in config_dict['notify_pagerduties']:
+        if key == '*':
+            send_pagerduties.extend(config_dict['notify_pagerduties'][key])
+            continue
+        if key.lower() in msg:
+            send_pagerduties.extend(config_dict['notify_pagerduties'][key])
+            continue
+    send_pagerduties = set(send_pagerduties)
+    if not send_pagerduties:
+        return
+
+    matchObj = re.match(r'(\w{12}).*missed (\d+) blocks.*', msg, re.I)
+    if not matchObj:
+        return
+
+    bp = matchObj.group(1)
+    missed = matchObj.group(2)
+    severity = 'critical' if missed == '12' else 'warning'
+
+    param = {
+        'payload': {
+            'summary': msg,
+            'severity': severity,
+            'source': bp,
+            'group': 'bpmonitor'
+        },
+        'event_action': 'trigger',
+        'client': 'bpmonitor',
+    }
+    headers = {
+        'Content-Type': 'stringapplication/json'
+    }
+
+    for integration_key in send_pagerduties:
+        param['routing_key'] = integration_key
+        print 'Send to pageduty: ', msg
+
+        try:
+            res = requests.post('https://events.pagerduty.com/v2/enqueue', json=param, headers=headers, timeout=5.0)
+            print res.text
+        except Exception as e:
+            print 'send_pagerduty_msg get exception:', e
+            print traceback.print_exc()
+
 ############################################
 g_stop_thread = False
 g_notify_cache = {}
@@ -137,7 +187,7 @@ def datestr24h_2second(date_str, timezone="UTC"):
 def get_current_bp(host):
     try:
         get_info = "%s/v1/chain/get_info" % (host)
-        ret = requests.get(get_info, timeout=HTTP_TIMEOUT, 
+        ret = requests.get(get_info, timeout=HTTP_TIMEOUT,
                     headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call:', get_info, ret.text
@@ -155,7 +205,7 @@ def get_bp_rank(host):
         top_limit = 30
         data = '{ "json": true, "lower_bound": "", "limit": %d}' % top_limit
         list_prods = "%s/v1/chain/get_producers" % (host)
-        ret = requests.post(list_prods, data=data, timeout=HTTP_TIMEOUT, 
+        ret = requests.post(list_prods, data=data, timeout=HTTP_TIMEOUT,
                     headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call:', list_prods, ret.text
@@ -177,7 +227,7 @@ def get_bp_rank(host):
     except Exception as e:
         print 'get_bp_rank get exception:', e
         print traceback.print_exc()
-    return None, 'get_bp_rank get exception:' + host 
+    return None, 'get_bp_rank get exception:' + host
 
 def get_block_producer(host, num):
     try:
@@ -200,9 +250,10 @@ def get_block_producer(host, num):
             result[key] = ret.group(0).strip()
         return result, None
     except Exception as e:
-        print 'get_block_producer get exception:', e
-        print traceback.print_exc()
-    return None, 'get_block_producer get exception:' + host 
+        pass
+        #print 'get_block_producer get exception:', e
+        #print traceback.print_exc()
+    return None, 'get_block_producer get exception:' + host
 
 def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
     try:
@@ -239,7 +290,7 @@ def check_rotating(host, status_dict, config_dict):
     global g_stop_thread
     if host not in status_dict:
         status_dict[host] = {'vote_rates_24h': collections.deque(maxlen=24), 'rank_last_2':collections.deque(maxlen=2), 'last_cblock_time':time.time()}
-    
+   
     pre_bp, cur_bp, bp_rank, pre_sch_ver, cur_sch_ver = None, None, None, 0, 0
     curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
     rotate_time, pre_bprank = time.time(), None
