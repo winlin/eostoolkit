@@ -1,0 +1,22 @@
+{
+    "notify_interval":60,
+    "http_urls":["http://mars.fn.eosbixin.com","http://mainnet.eoscanada.com","http://api.eossweden.se"],
+    "notify_phones":{"*":["+861850000000","+861850000000"],"eosbixinboot":["+861850000000"],"eoslaomaocom":["+861850000000"]},
+    "accessid":"",
+    "accessidkey":"",
+    "dtalk_access_token":"",
+    "yqq_userid":"",
+    "yqq_account":"",
+    "yqq_password":"",
+    "yqq_smsurl":"",
+    "sms":{"apikey":"", "tmpl":"", "batch_send_url":""},
+    "nodeos_port":80,
+    "wallet_port":8888,
+    "dockername":"nodeosd",
+    "cliname":"cleos",
+    "wallet_pwd":"xxxxxxxxxx",
+    "trans_info":[
+        {"from":"act1","to":"act2","contract":"","tokenname":"EOS"}
+    ]
+}
+
