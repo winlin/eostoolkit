@@ -9,7 +9,6 @@ INSTALL_APPS=(
     "apt-transport-https"
     "ca-certificates"
     "curl"
-    "software-properties-common"
     "python-pip"
     "tree"
     "supervisor"
@@ -101,6 +100,8 @@ function init_host() {
         curl -fsSL "$item" | sudo apt-key add -
     done
 
+    sudo apt-get install -y software-properties-common
+
     echo ">>>>>>>>>>> install repositories"
     for item in "${APP_REPO[@]}"; do
         sudo apt-add-repository "$item"
@@ -120,6 +121,7 @@ function init_host() {
     if [[ $? != 0 ]]; then
         echo "alias dlog='sudo docker-compose logs -t -f'" >> ~/.bashrc
     fi
+    wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/tmux.conf -O ~/.tmux.conf
 
     install_docker
     init_pip
