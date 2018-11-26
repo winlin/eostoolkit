@@ -30,4 +30,6 @@ else
     CONFIG_DIR=""
 fi
 
+nohup /opt/enumivo/bin/enuwallet  &
+
 exec /opt/enumivo/bin/enunode $CONFIG_DIR $@ 
