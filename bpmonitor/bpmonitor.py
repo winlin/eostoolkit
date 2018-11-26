@@ -26,6 +26,9 @@ from decimal import Decimal
 reload(sys)  # Reload does the trick!
 sys.setdefaultencoding('UTF8')
 
+HTTP_TIMEOUT = 2.5
+HTTP_AGENT = {'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"}
+
 # Just re-write yourself warning function body, nothing else need to be change.
 def send_warning(msg, config_dict, sms_flag=False, telegram_flag=True):
     ''' msg: the message need to send
@@ -54,7 +57,7 @@ def send_dingding_msg(msg, config_dict):
         }
     }
     try:
-        response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=3)
+        response = requests.post(url, data=json.dumps(content), headers=headers, params=querystring, timeout=HTTP_TIMEOUT)
         print 'dingding send message:', msg #, response.text
     except Exception as e:
         print 'send_dingding_msg get exception:', e
@@ -65,7 +68,7 @@ def send_telegram_msg(msg, config_dict):
     try:
         url = "https://api.telegram.org/bot%s/sendMessage" % (config_dict["telegram"]["token"])
         param = {"chat_id":config_dict["telegram"]["chat_id"], "text":msg, }
-        result = requests.post(url, param, timeout=5.0)
+        result = requests.post(url, param, timeout=HTTP_TIMEOUT)
         print "telegram_alarm send message:", msg, result.text
     except Exception as e:
         print 'send_telegram_msg get exception:', e
@@ -92,7 +95,7 @@ def send_mobile_msg(msg, config_dict):
     print 'Send to: ', send_phones, msg
     headers = {"Accept":"application/json;charset=utf-8;","Content-Type":"application/x-www-form-urlencoded;charset=utf-8;"}
     try:
-        res = requests.post(config_dict['sms']['batch_send_url'], data=param, headers=headers, timeout=5.0)
+        res = requests.post(config_dict['sms']['batch_send_url'], data=param, headers=headers, timeout=HTTP_TIMEOUT)
         print res.text
     except Exception as e:
         print 'send_mobile_msg get exception:', e
@@ -100,6 +103,8 @@ def send_mobile_msg(msg, config_dict):
 
 # Send PagerDuty
 def send_pagerduty_msg(msg, config_dict):
+    if 'notify_pagerduties' not in config_dict:
+        return
     send_pagerduties = []
     for key in config_dict['notify_pagerduties']:
         if key == '*':
@@ -139,7 +144,7 @@ def send_pagerduty_msg(msg, config_dict):
         print 'Send to pageduty: ', msg
 
         try:
-            res = requests.post('https://events.pagerduty.com/v2/enqueue', json=param, headers=headers, timeout=5.0)
+            res = requests.post('https://events.pagerduty.com/v2/enqueue', json=param, headers=headers, timeout=HTTP_TIMEOUT)
             print res.text
         except Exception as e:
             print 'send_pagerduty_msg get exception:', e
@@ -148,9 +153,6 @@ def send_pagerduty_msg(msg, config_dict):
 ############################################
 g_stop_thread = False
 g_notify_cache = {}
-
-HTTP_TIMEOUT = 6
-HTTP_AGENT = {'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"}
 
 def notify_users(msg, config_dict, sms_flag=False, telegram_flag=True):
     global g_notify_cache
@@ -324,7 +326,7 @@ def check_rotating(host, status_dict, config_dict):
                 bp_rank, err = get_bp_rank(host)
                 if err:
                     notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
-                    rotate_time = time.time() + 1.0
+                    rotate_time = time.time()
                     continue
                 if not pre_bprank:
                     pre_bprank = bp_rank
@@ -346,16 +348,16 @@ def check_rotating(host, status_dict, config_dict):
                 msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num-1)
                 notify_users(msg, config_dict, sms_flag=True)
 
-            if ignore_timestamp < cur_block_timestamp and curbp_bcount<11 and cur_lib_num-start_lib_num>11:
+            if ignore_timestamp < cur_block_timestamp and curbp_bcount<12 and cur_lib_num-start_lib_num>11:
                 msg = "%s [%d - %d] missed %d blocks. Next is %s " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount, cur_bp)
-                notify_users(msg, config_dict, sms_flag=True)
+                notify_users(msg, config_dict, sms_flag=(True if curbp_bcount < 11 else False))
             curbp_bcount = 1
             pre_bp = cur_bp
         except Exception as e:
             print 'check_rotating get exception:', e
             print traceback.print_exc()
         finally:
-            sleep_time = 1.0 + rotate_time - time.time()
+            sleep_time = 0.5 + rotate_time - time.time()
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
