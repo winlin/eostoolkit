@@ -22,6 +22,12 @@ from datetime import datetime
 from threading import Thread
 import simplejson as json
 from decimal import Decimal
+from Queue import Empty
+from operator import itemgetter
+import threading
+from multiprocessing import Queue
+from multiprocessing.pool import ThreadPool
+
 
 reload(sys)  # Reload does the trick!
 sys.setdefaultencoding('UTF8')
@@ -153,6 +159,16 @@ def send_pagerduty_msg(msg, config_dict):
 ############################################
 g_stop_thread = False
 g_notify_cache = {}
+g_bp_queue = Queue()
+g_notify_queue = Queue()
+
+def enqueue_msg(msg, config_dict=None, sms_flag=False, telegram_flag=False):
+    global g_notify_queue
+    g_notify_queue.put({
+        "msg": msg,
+        "sms_flag": sms_flag,
+        "telegram_flag": telegram_flag
+    })
 
 def notify_users(msg, config_dict, sms_flag=False, telegram_flag=True):
     global g_notify_cache
@@ -190,7 +206,7 @@ def get_current_bp(host):
     try:
         get_info = "%s/v1/chain/get_info" % (host)
         ret = requests.get(get_info, timeout=HTTP_TIMEOUT,
-                    headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
+                    headers=HTTP_AGENT)
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call:', get_info, ret.text
             return None, 'get_current_bp failed:' + host
@@ -208,7 +224,7 @@ def get_bp_rank(host):
         data = '{ "json": true, "lower_bound": "", "limit": %d}' % top_limit
         list_prods = "%s/v1/chain/get_producers" % (host)
         ret = requests.post(list_prods, data=data, timeout=HTTP_TIMEOUT,
-                    headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
+                    headers=HTTP_AGENT)
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call:', list_prods, ret.text
             return None, 'get_producers failed:' + host
@@ -218,27 +234,32 @@ def get_bp_rank(host):
             if index>20:
                 break
             bps_rank.append(item["owner"])
-            unclaim_hours = (time.time() - int(item['last_claim_time'])/1000000)/3600.0
+            unclaim_hours = 0
+            if ':' in item['last_claim_time']:
+                unclaim_hours = (time.time() - datestr24h_2second(item['last_claim_time'][:-4]))/3600.0
+            else:
+                unclaim_hours = (time.time() - int(item['last_claim_time'])/1000000)/3600.0
             if unclaim_hours < 26 or (item['owner'] in g_claim_cache and time.time() - g_claim_cache[item['owner']] < 3600*3):
                 continue
             g_claim_cache[item['owner']] = time.time()
             #daily claim delay
             msg = "%s claimreward delayed for more than %.1f hours" % (item["owner"], unclaim_hours)
-            notify_users(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True)
         return bps_rank, None
     except Exception as e:
         print 'get_bp_rank get exception:', e
         print traceback.print_exc()
     return None, 'get_bp_rank get exception:' + host
 
-def get_block_producer(host, num):
+def get_block_producer(params):
     try:
+        host, num = params
         url = host + "/v1/chain/get_block"
         payload = "{\"block_num_or_id\":%d}" % num
         response = requests.post(url, data=payload, timeout=HTTP_TIMEOUT,
-                        headers={'User-Agent':"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"})
-        bpline = response.text[:64] + '}'
-        print 'Get block %d :%s' % (num, bpline)
+                        headers=HTTP_AGENT.update({'Range': 'bytes=0-500'}),
+                        stream=True)
+        bpline = str(response.raw.read(500))
         match_regxs = {
             'producer' : '(?<=\"producer\":\")[^\",]*',
             'timestamp' : '(?<=\"timestamp\":\")[^\",]*',
@@ -246,16 +267,17 @@ def get_block_producer(host, num):
         }
         result = {}
         for key in match_regxs:
-            ret = re.search(match_regxs[key], response.text)
+            ret = re.search(match_regxs[key], bpline)
             if not ret:
-                return None, key + ' failed:' + host
+                print 'ERROR: Failed to get in block:', key
+                return num, None, key + ' failed:' + host
             result[key] = ret.group(0).strip()
-        return result, None
+        return num, result, None
     except Exception as e:
         pass
         #print 'get_block_producer get exception:', e
         #print traceback.print_exc()
-    return None, 'get_block_producer get exception:' + host
+    return num, None, 'get_block_producer get exception:' + host
 
 def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
     try:
@@ -274,49 +296,102 @@ def check_bprank_change(pre_rank, cur_rank, config_dict):
     for bp in outrank_bps:
         rank_changed = True
         msg = "%s out rank of %d" % (bp, len(cur_rank))
-        notify_users(msg, config_dict, sms_flag=True)
+        enqueue_msg(msg, config_dict, sms_flag=True)
 
     for index,bp in enumerate(cur_rank):
         if bp not in pre_rank:
             rank_changed = True
             msg = "%s rank changed into %d" % (bp, index+1)
-            notify_users(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True)
             continue
         if cur_rank.index(bp) != pre_rank.index(bp):
             rank_changed = True
             msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
-            notify_users(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True)
     return rank_changed
 
-def check_rotating(host, status_dict, config_dict):
-    global g_stop_thread
-    if host not in status_dict:
-        status_dict[host] = {'vote_rates_24h': collections.deque(maxlen=24), 'rank_last_2':collections.deque(maxlen=2), 'last_cblock_time':time.time()}
-   
-    pre_bp, cur_bp, bp_rank, pre_sch_ver, cur_sch_ver = None, None, None, 0, 0
-    curbp_bcount, lib_num, cur_lib_num, start_lib_num = 0, 0, 0, 0
-    rotate_time, pre_bprank = time.time(), None
-    ignore_timestamp = time.time() - 180
+def get_libblock_process(host):
+    print('current_bp_process started !')
+    global g_stop_thread, g_bp_queue
+    prev_lib_num, pool, sleep_time  = -1, ThreadPool(8), 0.5
+
     while not g_stop_thread:
         try:
-            curbp_info, err = get_current_bp(host)
+            bp_info, err = get_current_bp(host)
             if err:
-                notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
-                rotate_time = time.time()
+                enqueue_msg(err)
                 continue
-            lib_num = curbp_info['last_irreversible_block_num']
-            if cur_lib_num < 1:
-                cur_lib_num, start_lib_num = lib_num, lib_num
-            if cur_lib_num > lib_num:
-                # wait for LIB increase
-                rotate_time = time.time()
+            cur_lib_num = bp_info['last_irreversible_block_num']
+            if prev_lib_num == cur_lib_num:
                 continue
 
-            block_bpinfo, err = get_block_producer(host, cur_lib_num)
-            if err:
-                notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
-                rotate_time = time.time()
+            if prev_lib_num < 0:
+                num, info, err = get_block_producer((host, cur_lib_num))
+                if err:
+                    enqueue_msg(err)
+                    print 'WARNING: need to retry from LIB:', prev_lib_num
+                    continue
+                print 'Get block %d :%s' % (num, info)
+                prev_lib_num = cur_lib_num
+                g_bp_queue.put({"num": cur_lib_num, "info": info})
                 continue
+            # prev_lib_num < cur_lib_num
+            print('unprocessed block size: ', cur_lib_num - prev_lib_num)
+            result = pool.map(get_block_producer, [ (host, num) for num in range(prev_lib_num + 1, cur_lib_num + 1) ])
+            # if failed one block get need to retry
+            for item in result:
+                if item[2] or item[1] is None:
+                    print 'WARNING: need to retry from LIB:', prev_lib_num
+                    continue
+
+            for item in sorted(result, key=itemgetter(0)):
+                print 'Get block %d :%s' % (item[0], item[1])
+                g_bp_queue.put({"num": item[0], "info": item[1]})
+
+            prev_lib_num = cur_lib_num
+            sleep_time = 0.2
+        except Exception as e:
+            print 'get_libblock_process get exception:', e
+            print traceback.print_exc()
+        finally:
+            time.sleep(sleep_time)
+            sleep_time = 0.5
+
+def notify_process(config_dict):
+    """notify user errors"""
+    print("notify_process started !")
+    global g_stop_thread, g_notify_queue
+
+    while not g_stop_thread:
+        try:
+            msg = g_notify_queue.get(False)
+            notify_users(msg["msg"], config_dict, msg["sms_flag"], msg["telegram_flag"])
+        except Empty as e:
+            time.sleep(.5)
+
+def check_rotating_process(host, config_dict):
+    print('check_rotating_process started !')
+    global g_stop_thread, g_bp_queue
+
+    pre_bp, cur_bp, bp_rank, pre_sch_ver, cur_sch_ver = None, None, None, 0, 0
+    curbp_bcount, cur_lib_num, start_lib_num = 0, 0, 0
+    pre_bprank = None
+    ignore_timestamp = time.time() - 180
+
+    while not g_stop_thread:
+        try:
+            item = g_bp_queue.get(False)
+        except Empty as e:
+            time.sleep(.1)
+            continue
+        cur_lib_num, block_bpinfo = item["num"], item["info"]
+        if not block_bpinfo:
+            print('get block %d failed !' % cur_lib_num)
+            continue
+        if start_lib_num < 1:
+            start_lib_num = cur_lib_num
+
+        try:
             cur_bp, cur_sch_ver = block_bpinfo['producer'], block_bpinfo['schedule_version']
             if not pre_bp:
                 pre_bp = cur_bp
@@ -325,41 +400,36 @@ def check_rotating(host, status_dict, config_dict):
             if pre_bp != cur_bp:
                 bp_rank, err = get_bp_rank(host)
                 if err:
-                    notify_users(err, config_dict, sms_flag=False, telegram_flag=False)
-                    rotate_time = time.time()
+                    enqueue_msg(err)
                     continue
                 if not pre_bprank:
                     pre_bprank = bp_rank
                 rank_changed = check_bprank_change(pre_bprank, bp_rank, config_dict)
                 pre_bprank = bp_rank
                 if pre_sch_ver != cur_sch_ver or rank_changed:
-                    print '21th bp rank changed:pre_sch_ver:%s cur_sch_ver:%s rank_changed:%s' % (pre_sch_ver, cur_sch_ver, rank_changed)
+                    print('21th bp rank changed:pre_sch_ver:%s cur_sch_ver:%s rank_changed:%s' % (pre_sch_ver, cur_sch_ver, rank_changed))
                     ignore_timestamp = time.time() + 450
                 pre_sch_ver = cur_sch_ver
 
-            cur_lib_num += 1
             if pre_bp == cur_bp:
                 curbp_bcount += 1
                 continue
-        
-            legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp) 
-            cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4]) 
-            if not legal and ignore_timestamp < cur_block_timestamp:
-                msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num-1)
-                notify_users(msg, config_dict, sms_flag=True)
 
-            if ignore_timestamp < cur_block_timestamp and curbp_bcount<12 and cur_lib_num-start_lib_num>11:
-                msg = "%s [%d - %d] missed %d blocks. Next is %s " % (pre_bp, cur_lib_num-1-curbp_bcount, cur_lib_num-2, 12-curbp_bcount, cur_bp)
-                notify_users(msg, config_dict, sms_flag=(True if curbp_bcount < 11 else False))
+            legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp)
+            cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4])
+            if not legal and ignore_timestamp < cur_block_timestamp:
+                msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num - 1)
+                enqueue_msg(msg, sms_flag=True)
+
+            if ignore_timestamp < cur_block_timestamp and curbp_bcount < 12 and cur_lib_num - start_lib_num > 11:
+                msg = "%s [%d - %d] missed %d blocks. Next is %s " % (
+                    pre_bp, cur_lib_num - curbp_bcount, cur_lib_num - 1, 12 - curbp_bcount, cur_bp)
+                enqueue_msg(msg, sms_flag=(True if curbp_bcount < 11 else False))
             curbp_bcount = 1
             pre_bp = cur_bp
         except Exception as e:
-            print 'check_rotating get exception:', e
-            print traceback.print_exc()
-        finally:
-            sleep_time = 0.5 + rotate_time - time.time()
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            print('check_rotating get exception:', e)
+            print(traceback.print_exc())
 
 def signal_default_handler(sig, frame):
     global g_stop_thread
@@ -368,8 +438,19 @@ def signal_default_handler(sig, frame):
 
 def main(config_dict):
     global g_stop_thread
-    status_dict = {}
-    check_rotating(config_dict['http_urls'][0], status_dict, config_dict)
+    
+    host = config_dict['http_urls'][0]
+
+    threads = [
+        threading.Thread(target=get_libblock_process, args=(host,)),
+        threading.Thread(target=check_rotating_process, args=(host, config_dict)),
+        threading.Thread(target=notify_process, args=(config_dict,)),
+    ]
+    for th in threads:
+        th.start()
+
+    while not g_stop_thread:
+        time.sleep(.5)
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
