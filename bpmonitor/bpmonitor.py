@@ -244,7 +244,7 @@ def get_bp_rank(host):
             g_claim_cache[item['owner']] = time.time()
             #daily claim delay
             msg = "%s claimreward delayed for more than %.1f hours" % (item["owner"], unclaim_hours)
-            enqueue_msg(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True, telegram_flag=True)
         return bps_rank, None
     except Exception as e:
         print 'get_bp_rank get exception:', e
@@ -296,18 +296,18 @@ def check_bprank_change(pre_rank, cur_rank, config_dict):
     for bp in outrank_bps:
         rank_changed = True
         msg = "%s out rank of %d" % (bp, len(cur_rank))
-        enqueue_msg(msg, config_dict, sms_flag=True)
+        enqueue_msg(msg, config_dict, sms_flag=True, telegram_flag=True)
 
     for index,bp in enumerate(cur_rank):
         if bp not in pre_rank:
             rank_changed = True
             msg = "%s rank changed into %d" % (bp, index+1)
-            enqueue_msg(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True, telegram_flag=True)
             continue
         if cur_rank.index(bp) != pre_rank.index(bp):
             rank_changed = True
             msg = "%s rank changed from %d to %d" % (bp, pre_rank.index(bp)+1, index+1)
-            enqueue_msg(msg, config_dict, sms_flag=True)
+            enqueue_msg(msg, config_dict, sms_flag=True, telegram_flag=True)
     return rank_changed
 
 def get_libblock_process(host):
@@ -331,7 +331,7 @@ def get_libblock_process(host):
                     enqueue_msg(err)
                     print 'WARNING: need to retry from LIB:', prev_lib_num
                     continue
-                print 'Get block %d :%s' % (num, info)
+                print 'Get one block %d :%s' % (num, info)
                 prev_lib_num = cur_lib_num
                 g_bp_queue.put({"num": cur_lib_num, "info": info})
                 continue
@@ -339,10 +339,14 @@ def get_libblock_process(host):
             print('unprocessed block size: ', cur_lib_num - prev_lib_num)
             result = pool.map(get_block_producer, [ (host, num) for num in range(prev_lib_num + 1, cur_lib_num + 1) ])
             # if failed one block get need to retry
+            stop_flag = False
             for item in result:
                 if item[2] or item[1] is None:
                     print 'WARNING: need to retry from LIB:', prev_lib_num
-                    continue
+                    stop_flag = True
+                    break
+            if stop_flag:
+                continue
 
             for item in sorted(result, key=itemgetter(0)):
                 print 'Get block %d :%s' % (item[0], item[1])
@@ -419,12 +423,12 @@ def check_rotating_process(host, config_dict):
             cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4])
             if not legal and ignore_timestamp < cur_block_timestamp:
                 msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num - 1)
-                enqueue_msg(msg, sms_flag=True)
+                enqueue_msg(msg, sms_flag=True, telegram_flag=True)
 
             if ignore_timestamp < cur_block_timestamp and curbp_bcount < 12 and cur_lib_num - start_lib_num > 11:
                 msg = "%s [%d - %d] missed %d blocks. Next is %s " % (
                     pre_bp, cur_lib_num - curbp_bcount, cur_lib_num - 1, 12 - curbp_bcount, cur_bp)
-                enqueue_msg(msg, sms_flag=(True if curbp_bcount < 11 else False))
+                enqueue_msg(msg, sms_flag=(True if curbp_bcount < 11 else False), telegram_flag=True)
             curbp_bcount = 1
             pre_bp = cur_bp
         except Exception as e:
