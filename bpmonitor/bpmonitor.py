@@ -216,11 +216,29 @@ def get_current_bp(host):
         print traceback.print_exc()
     return None, 'get_current_bp get exception:' + host
 
+def get_bp_schedule(host):
+    try:
+        data = '{}'
+        prods_schd = "%s/v1/chain/get_producer_schedule" % (host)
+        ret = requests.post(prods_schd, data=data, timeout=HTTP_TIMEOUT,
+                    headers=HTTP_AGENT)
+        if ret.status_code/100 != 2:
+            print 'ERROR: failed to call:', prods_schd, ret.text
+            return None, None, 'get_producer_schedule failed:' + host
+        result = json.loads(ret.text)
+        bp_schedule = [ item['producer_name'] for item in result['active']['producers'] ]
+        print 'Schedule Version:', result['active']['version'], ' ', bp_schedule
+        return result['active']['version'], bp_schedule, None
+    except Exception as e:
+        print 'get_producer_schedule get exception:', e
+        print traceback.print_exc()
+    return None, None, 'get_producer_schedule get exception:' + host
+
 g_claim_cache = {}
 def get_bp_rank(host):
     global g_claim_cache
     try:
-        top_limit = 30
+        top_limit = 40
         data = '{ "json": true, "lower_bound": "", "limit": %d}' % top_limit
         list_prods = "%s/v1/chain/get_producers" % (host)
         ret = requests.post(list_prods, data=data, timeout=HTTP_TIMEOUT,
@@ -231,7 +249,7 @@ def get_bp_rank(host):
         result = json.loads(ret.text)
         bps_rank = []
         for index, item in enumerate(result['rows']):
-            if index>20:
+            if index>30:
                 break
             bps_rank.append(item["owner"])
             unclaim_hours = 0
@@ -279,17 +297,17 @@ def get_block_producer(params):
         #print traceback.print_exc()
     return num, None, 'get_block_producer get exception:' + host
 
-def check_nextbp_legal(bp_rank, pre_bp, cur_bp):
+def check_nextbp_legal(bp_schedule, pre_bp, cur_bp):
     try:
-        sorted_bprank = sorted(bp_rank)
-        if sorted_bprank[sorted_bprank.index(pre_bp)+1] != cur_bp:
-            return False, sorted_bprank[sorted_bprank.index(pre_bp)+1]
+        legal_bp = bp_schedule[bp_schedule.index(pre_bp)+1]
+        if legal_bp != cur_bp:
+            return False, legal_bp
     except Exception as e:
         pass
     # The first 21 bps order may change, so here just assume legal
     return True, None
 
-def check_bprank_change(pre_rank, cur_rank, config_dict):
+def check_bprank_change(pre_rank, cur_rank):
     print pre_rank, '\n', cur_rank
     outrank_bps = set(pre_rank) - set(cur_rank)
     rank_changed = False
@@ -377,9 +395,8 @@ def check_rotating_process(host, config_dict):
     print('check_rotating_process started !')
     global g_stop_thread, g_bp_queue
 
-    pre_bp, cur_bp, bp_rank, pre_sch_ver, cur_sch_ver = None, None, None, 0, 0
+    pre_bp, cur_bp, prebp_rank, bp_rank, bp_schedule, pre_sch_ver, cur_sch_ver = None, None, None, None, None, 0, 0
     curbp_bcount, cur_lib_num, start_lib_num = 0, 0, 0
-    pre_bprank = None
     ignore_timestamp = time.time() - 180
 
     while not g_stop_thread:
@@ -401,25 +418,41 @@ def check_rotating_process(host, config_dict):
                 pre_bp = cur_bp
             if not pre_sch_ver:
                 pre_sch_ver = cur_sch_ver
+            if bp_rank is None :
+                bp_rank, err = get_bp_rank(host)
+                if err:
+                    enqueue_msg(err)
+                    continue
+                prebp_rank = bp_rank
+            if not bp_schedule:
+                schedule_ver, bp_schedule, err = get_bp_schedule(host)
+                if err:
+                    enqueue_msg(err)
+                    continue
+
             if pre_bp != cur_bp:
                 bp_rank, err = get_bp_rank(host)
                 if err:
                     enqueue_msg(err)
                     continue
-                if not pre_bprank:
-                    pre_bprank = bp_rank
-                rank_changed = check_bprank_change(pre_bprank, bp_rank, config_dict)
-                pre_bprank = bp_rank
+
+                rank_changed = check_bprank_change(prebp_rank, bp_rank)
+                prebp_rank = bp_rank
                 if pre_sch_ver != cur_sch_ver or rank_changed:
                     print('21th bp rank changed:pre_sch_ver:%s cur_sch_ver:%s rank_changed:%s' % (pre_sch_ver, cur_sch_ver, rank_changed))
-                    ignore_timestamp = time.time() + 450
+                    ignore_timestamp = time.time() + 600
+                    schedule_ver, bp_schedule, err = get_bp_schedule(host)
+                    if err:
+                        enqueue_msg(err)
+                        continue
+
                 pre_sch_ver = cur_sch_ver
 
             if pre_bp == cur_bp:
                 curbp_bcount += 1
                 continue
 
-            legal, legal_bp = check_nextbp_legal(bp_rank, pre_bp, cur_bp)
+            legal, legal_bp = check_nextbp_legal(bp_schedule, pre_bp, cur_bp)
             cur_block_timestamp = datestr24h_2second(block_bpinfo['timestamp'][:-4])
             if not legal and ignore_timestamp < cur_block_timestamp:
                 msg = "%s MIGHT miss 12 blocks after %d" % (legal_bp, cur_lib_num - 1)
