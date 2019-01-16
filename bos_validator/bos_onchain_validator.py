@@ -33,7 +33,7 @@ def weight_str2float(weight):
 
 def get_onchain_balance(account_name, node_host):
         body = {'scope':account_name, 'code':'eosio.token', 'table':'accounts', 'json':True}
-        ret = requests.post("http://%s/v1/chain/get_table_rows" % node_host, data=json.dumps(body), timeout=2)
+        ret = requests.post("http://%s/v1/chain/get_table_rows" % node_host, data=json.dumps(body), timeout=4)
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call get_table_rows accounts for:', account_name, ret.text
             return -1
@@ -78,7 +78,7 @@ def check_balance_signal_account(param):
     signal_onchain_amount = Decimal(-1)
     try:
         # call get account
-        ret = requests.post("http://%s/v1/chain/get_account" % node_host, data=json.dumps({'account_name':account_name}), timeout=2)
+        ret = requests.post("http://%s/v1/chain/get_account" % node_host, data=json.dumps({'account_name':account_name}), timeout=4)
         if ret.status_code/100 != 2:
             print 'ERROR: failed to call get_account for:', account_name, ret.text
             return signal_onchain_amount
@@ -190,7 +190,6 @@ def check_balance(conf_dict, process_pool, cpu_count):
 
             print 'Onchain: common accounts balance:', account_onchain_balance_total, ' account number:', line_nu
             
-
             airdrop_bos = get_onchain_balance('airdrop.bos', node_host)
             print 'Get airdrop.bos balance:%s' % airdrop_bos
     
@@ -223,7 +222,7 @@ def main():
     conf_dict['dlfiles'] = {}
 
     # Start the validation
-    cpu_count = multiprocessing.cpu_count()
+    cpu_count = multiprocessing.cpu_count() 
     process_pool = multiprocessing.Pool(processes=cpu_count)
     try:
         time_start = time.time()

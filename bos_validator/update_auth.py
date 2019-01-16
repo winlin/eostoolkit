@@ -68,7 +68,7 @@ def multi_run(process_pool,cpu_count,path):
 
 def main():
     # Start the validation
-    cpu_count = multiprocessing.cpu_count()
+    cpu_count = multiprocessing.cpu_count() - 1
     process_pool = multiprocessing.Pool(processes=cpu_count)
     try:
         multi_run(process_pool,sys.argv[1])
