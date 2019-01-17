@@ -2,7 +2,7 @@
   "nodeosd_host":"127.0.0.1:87",
   "snapshot_lines":0,
   "token_name":"BOS",
-  "airdrop.bos":50404043.9033,
+  "airdrop.bos":50404033.4033,
   "snapshot.csv":"/data/bos/bos-airdrop-snapshots/accounts_info_bos_snapshot.airdrop.normal.csv",
   "snapshot.json":"/data/bos/bos-airdrop-snapshots/accounts_info_bos_snapshot.airdrop.msig.json"
 }
