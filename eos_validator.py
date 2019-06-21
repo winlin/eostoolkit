@@ -31,20 +31,20 @@ def check_balance(node_host="http://localhost:8888", snapshot_csv="./snapshot.cs
 # Check the CONTRACT
 def check_contract(node_host="http://localhost:8888")
     contract_hash_map = {
-        'eosio.msig':{'cmd':'cleos get code eosio.msig' 'abi':'/ipfs/QmRgNd9Jm6UX8qseBvMhfh8Pu3kdyJDNE1StGQWoYdp7Wx', 'wasm':'/ipfs/QmadUdTbjJWuqccmFZUfaNT7PTAvwVh6ffhnd8HfzMmuvL'}
-        'eosio.token':{'cmd':'cleos get code eosio.token', 'abi':'/ipfs/QmRgNd9Jm6UX8qseBvMhfh8Pu3kdyJDNE1StGQWoYdp7Wx', 'wasm':'/ipfs/QmadUdTbjJWuqccmFZUfaNT7PTAvwVh6ffhnd8HfzMmuvL'}
-        'eosio.disco':{'cmd':'cleos get code eosio.disco', 'abi':'/ipfs/QmRgNd9Jm6UX8qseBvMhfh8Pu3kdyJDNE1StGQWoYdp7Wx', 'wasm':'/ipfs/QmadUdTbjJWuqccmFZUfaNT7PTAvwVh6ffhnd8HfzMmuvL'}
-        'eosio.unregd':{'cmd':'cleos get code eosio.unregd', 'abi':'/ipfs/QmRgNd9Jm6UX8qseBvMhfh8Pu3kdyJDNE1StGQWoYdp7Wx', 'wasm':'/ipfs/QmadUdTbjJWuqccmFZUfaNT7PTAvwVh6ffhnd8HfzMmuvL'}
-        'eosio':{'cmd':'cleos get code eosio', 'abi':'/ipfs/QmRgNd9Jm6UX8qseBvMhfh8Pu3kdyJDNE1StGQWoYdp7Wx', 'wasm':'/ipfs/QmadUdTbjJWuqccmFZUfaNT7PTAvwVh6ffhnd8HfzMmuvL'}
+        'eosio.msig':{'cmd':'cleos get code eosio.msig' 'abi':'YOUR_ABI_HASH_VAL', 'wasm':'YOUR_WASM_HASH_VAL'}
+        'eosio.token':{'cmd':'cleos get code eosio.token', 'abi':'YOUR_ABI_HASH_VAL', 'wasm':'YOUR_WASM_HASH_VAL'}
+        'eosio.disco':{'cmd':'cleos get code eosio.disco', 'abi':'YOUR_ABI_HASH_VAL', 'wasm':'YOUR_WASM_HASH_VAL'}
+        'eosio.unregd':{'cmd':'cleos get code eosio.unregd', 'abi':'YOUR_ABI_HASH_VAL', 'wasm':'YOUR_WASM_HASH_VAL'}
+        'eosio':{'cmd':'cleos get code eosio', 'abi':'YOUR_ABI_HASH_VAL', 'wasm':'YOUR_WASM_HASH_VAL'}
+        #... maybe more other contract
     }
     for contract in contract_hash_map:
         abi_json, wasm_content = get_code(contract_hash_map[contract]['cmd'])
         wasm_hash = sha256(wasm_content)
-        wasm_filebash = sha256(ipfs(contract_hash_map[contract]['wasm']))
-        if wasm_hash != wasm_filebash:
+        if wasm_hash != contract_hash_map[contract]['wasm']:
             # Validate Failed because the WASM file NOT match
             raise Exception("WASM file NOT match")
-        if sha256(sort_json(abi_json)) != sha256(ipfs(contract_hash_map[contract]['abi'])):
+        if sha256(sort_json(abi_json)) != contract_hash_map[contract]['abi']:
             # Validate Failed because the ABI file NOT match
             raise Exception("ABI file NOT match")
 
