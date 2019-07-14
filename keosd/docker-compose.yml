@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  keosd:
+    image: winlin/eosmainnet:v1.1.4
+    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=0.0.0.0:48888
+    hostname: keosd
+    ports:
+      - 48888:48888
+    environment:
+      - WALLETPORT=48888
+    volumes:
+      - /data/eos/keosd:/opt/eosio/bin/data-dir

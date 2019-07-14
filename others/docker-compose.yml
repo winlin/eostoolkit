@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  nodeosd:
+    image: winlin/enu:DAWN-2018-04-27-ALPHA
+    command: /opt/enumivo/bin/enunoded.sh --data-dir /opt/enumivo/bin/data-dir
+    hostname: enunoded
+    ports:
+      - 8888:8888
+      - 9876:9876
+    environment:
+      - NODEOSPORT=8888
+      - WALLETPORT=8900
+    volumes:
+      - 'local_data_path':/opt/enumivo/bin/data-dir
+

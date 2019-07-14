@@ -1,0 +1,17 @@
+{
+    "notify_interval":60,
+    "http_urls":["http://mars.fn.eosbixin.com","http://mainnet.eoscanada.com","http://api.eossweden.se"],
+    "bpaccount":"eosbixinboot",
+    "notify_phones":{"*":["+861850000000","+861850000000"],"eosbixinboot":["+861850000000"],"eoslaomaocom":["+861850000000"]},
+    "notify_pagerduties":{"*":["integrationKey1","integrationKey2"],"eosbeijingbp":["integrationKey1"]},
+    "reward_output":"./reward_daily.txt",
+    "accessid":"",
+    "accessidkey":"",
+    "dtalk_access_token":"",
+    "yqq_userid":"",
+    "yqq_account":"",
+    "yqq_password":"",
+    "yqq_smsurl":"",
+    "telegram":{"token":"xxxxx","chat_id":"@xxxxxxx"},
+    "sms":{"apikey":"", "tmpl":"", "batch_send_url":""}
+}

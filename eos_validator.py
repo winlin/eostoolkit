@@ -1,4 +1,8 @@
 
+# ATTENTION: the following code is just for demo.
+#  the real script tool in eos_validator/eos_onchain_validator.py
+
+
 # Check the TOKEN amount
 def check_balance(node_host="http://localhost:8888", snapshot_csv="./snapshot.csv", eos_total=1000000000):
     with open(snapshot_csv, 'r') as fp:
@@ -20,10 +24,10 @@ def check_balance(node_host="http://localhost:8888", snapshot_csv="./snapshot.cs
                 # Validate Failed because the public key in onchainblock NOT same with the snapshot
                 raise Exception("account public key failed: ", account_name)
 
-            eosio_onchain_balance += account_onchain_amount
+            account_onchain_total += account_onchain_amount
 
         eosio_onchain_balance = exec('cleos -u ' + node_host + ' get currency balance eosio.token eosio')
-        if abs(eos_total - (eosio_onchain_balance + eosio_onchain_balance)) > 0.0001:
+        if abs(eos_total - (account_onchain_total + eosio_onchain_balance)) > 0.0001:
             # Validate Failed because the eos_total NOT match all legal amount
             raise Exception("There are illegal SYS transfer to unknow accounts")
 

@@ -9,20 +9,16 @@ INSTALL_APPS=(
     "apt-transport-https"
     "ca-certificates"
     "curl"
-    "software-properties-common"
     "python-pip"
     "tree"
     "supervisor"
     "wireguard"
     "certbot"
-    "python3-setuptools"
     "python-setuptools"
-    "python3.6"
-    "python3.6-dev"
     "python-dev"
-    "python3.6-gdbm"
-    "python3-pip"
     "libssl-dev"
+    "hexcurse"
+    "ntpstat"
     )
 
 PIP_APPS=(
@@ -98,10 +94,13 @@ function pull_eostoolkit() {
 }
 
 function init_host() {
+    sudo apt-get update
     echo ">>>>>>>>>>> install GPG Keys"
     for item in "${GPG_KEYS[@]}"; do
         curl -fsSL "$item" | sudo apt-key add -
     done
+
+    sudo apt-get install -y software-properties-common
 
     echo ">>>>>>>>>>> install repositories"
     for item in "${APP_REPO[@]}"; do
@@ -117,6 +116,12 @@ function init_host() {
             exit 1
         fi
     done
+    # initialize bashrc
+    alias | grep dlog
+    if [[ $? != 0 ]]; then
+        echo "alias dlog='sudo docker-compose logs -t -f'" >> ~/.bashrc
+    fi
+    wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/tmux.conf -O ~/.tmux.conf
 
     install_docker
     init_pip

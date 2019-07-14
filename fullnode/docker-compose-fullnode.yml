@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  nodeosd:
+    image: winlin/eosmainnet:v1.0.6
+    command: /opt/eosio/bin/nodeosd.sh --data-dir /opt/eosio/bin/data-dir
+#--genesis-json /opt/eosio/bin/data-dir/genesis.json
+    hostname: nodeosd
+    ports:
+      - 80:80
+      - 443:443
+    expose:
+      - "80"
+      - "443"
+    environment:
+      - NODEOSPORT=80
+      - WALLETPORT=12032
+    volumes:
+      - /data/eos/mainnet:/opt/eosio/bin/data-dir
