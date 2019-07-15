@@ -1,15 +1,13 @@
-FROM winlin/eosbuilder:v1.0.0 as builder
+FROM winlin/eosbuilder:v1.0.1 as builder
 ARG branch=master
 ARG symbol=SYS
 
-RUN git clone -b $branch https://github.com/EOSIO/eos.git --recursive \
-    && cd eos && echo "$branch:$(git rev-parse HEAD)" > /etc/eosio-version \
-    && cmake -H. -B"/tmp/build" -GNinja -DCMAKE_BUILD_TYPE=Release -DWASM_ROOT=/opt/wasm -DCMAKE_CXX_COMPILER=clang++ \
-       -DCMAKE_C_COMPILER=clang -DCMAKE_INSTALL_PREFIX=/tmp/build -DBUILD_MONGO_DB_PLUGIN=true -DCORE_SYMBOL_NAME=$symbol \
-    && cmake --build /tmp/build --target install
+RUN git clone -b $branch https://github.com/EOSIO/eos.git --recursive 
 
-
-FROM ubuntu:18.04
+WORKDIR /eos
+RUN git remote update
+RUN ./scripts/eosio_build.sh -s EOS -y -P \
+RUN ./scripts/eosio_install.sh
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/lib/* /usr/local/lib/
