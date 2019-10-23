@@ -63,8 +63,11 @@ fi
 
 function install_docker() {
     echo ">>>>>>>>>>> install Docker"
+    sudo mkdir -p /etc/docker/
+    sudo wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/docker-daemon.json -O /etc/docker/daemon.json
+
     curl -fsSL get.docker.com -o get-docker.sh
-    sudo sh get-docker.sh --mirror Aliyun
+    sudo sh get-docker.sh
 
     sudo systemctl enable docker
     sudo systemctl start docker
