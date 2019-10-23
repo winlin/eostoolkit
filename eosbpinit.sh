@@ -64,7 +64,7 @@ fi
 function install_docker() {
     echo ">>>>>>>>>>> install Docker"
     sudo mkdir -p /etc/docker/
-    sudo wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/docker-daemon.json -O /etc/docker/daemon.json
+    sudo wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/docker-etc-daemon.json -O /etc/docker/daemon.json
 
     curl -fsSL get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
@@ -99,7 +99,7 @@ function pull_eostoolkit() {
 function init_host() {
     sudo mkdir -p /data
     sudo chown $USER:$USER /data
-    
+
     sudo apt-get update
     echo ">>>>>>>>>>> install GPG Keys"
     for item in "${GPG_KEYS[@]}"; do
