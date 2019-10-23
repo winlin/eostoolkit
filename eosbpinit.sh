@@ -97,6 +97,9 @@ function pull_eostoolkit() {
 }
 
 function init_host() {
+    sudo mkdir -p /data
+    sudo chown $USER:$USER /data
+    
     sudo apt-get update
     echo ">>>>>>>>>>> install GPG Keys"
     for item in "${GPG_KEYS[@]}"; do
