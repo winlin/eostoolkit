@@ -353,6 +353,8 @@ def get_libblock_process(host):
                 prev_lib_num = cur_lib_num
                 g_bp_queue.put({"num": cur_lib_num, "info": info})
                 continue
+            if cur_lib_num <= prev_lib_num:
+                continue
             # prev_lib_num < cur_lib_num
             print('unprocessed block size: ', cur_lib_num - prev_lib_num)
             result = pool.map(get_block_producer, [ (host, num) for num in range(prev_lib_num + 1, cur_lib_num + 1) ])
