@@ -9,7 +9,6 @@ INSTALL_APPS=(
     "apt-transport-https"
     "ca-certificates"
     "curl"
-    "python-pip"
     "tree"
     "supervisor"
     "python-setuptools"
@@ -17,6 +16,9 @@ INSTALL_APPS=(
     "libssl-dev"
     "hexcurse"
     "ntpstat"
+    "software-properties-common"
+    "python3.8"
+    "python3.8-distutils"
     )
 
 PIP_APPS=(
@@ -26,6 +28,10 @@ PIP_APPS=(
     "argparse"
     "pyjsonrpc"
     "stormssh"
+    "orjson" 
+    "ujson"
+    "uvloop" 
+    "tornado"
     )
 
 APP_REPO=(
@@ -75,7 +81,7 @@ function init_pip() {
     echo ">>>>>>>>>>> install PIP apps"
     sudo pip install --upgrade pip
     for item in "${PIP_APPS[@]}"; do
-        sudo pip install "$item" --upgrade
+        sudo pip3.8 install "$item" --upgrade
     done
 }
 
@@ -125,11 +131,14 @@ function init_host() {
     fi
     wget https://raw.githubusercontent.com/EOSBIXIN/eostoolkit/master/tmux.conf -O ~/.tmux.conf
 
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    sudo python3.8 get-pip.py
+    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+
     install_docker
     init_pip
     pull_eostoolkit
 }
-
 
 
 if [[ $1 == "init" ]]; then
