@@ -14,11 +14,10 @@ RUN echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main" >> /etc/ap
   && apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y git-core automake autoconf libtool build-essential pkg-config libtool \
      mpi-default-dev libicu-dev python-dev python3-dev libbz2-dev zlib1g-dev libssl-dev libgmp-dev doxygen graphviz libgmp3-dev \
-     clang-7 lld-4.0 llvm-7-dev libclang-4.0-dev ninja-build libusb-1.0-0-dev curl libcurl4-gnutls-dev autotools-dev ruby \
-  && rm -rf /var/lib/apt/lists/*
+     clang-8 lld-8.0 llvm-8-dev libclang-8.0-dev ninja-build libusb-1.0-0-dev curl libcurl4-gnutls-dev autotools-dev ruby \
 
-RUN update-alternatives --install /usr/bin/clang clang /usr/lib/llvm-7/bin/clang 700 \
-  && update-alternatives --install /usr/bin/clang++ clang++ /usr/lib/llvm-7/bin/clang++ 700
+RUN update-alternatives --install /usr/bin/clang clang /usr/lib/llvm-8/bin/clang 800 \
+  && update-alternatives --install /usr/bin/clang++ clang++ /usr/lib/llvm-8/bin/clang++ 800
 
 RUN wget https://cmake.org/files/v3.9/cmake-3.9.6-Linux-x86_64.sh \
     && bash cmake-3.9.6-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir --skip-license \
@@ -44,8 +43,8 @@ RUN wget https://github.com/mongodb/mongo-c-driver/releases/download/1.10.2/mong
     && make install \
     && cd ../../ && rm -rf mongo-c-driver-1.10.2
 
-RUN git clone --depth 1 --single-branch --branch release_70 https://github.com/llvm-mirror/llvm.git \
-    && git clone --depth 1 --single-branch --branch release_70 https://github.com/llvm-mirror/clang.git llvm/tools/clang \
+RUN git clone --depth 1 --single-branch --branch release_80 https://github.com/llvm-mirror/llvm.git \
+    && git clone --depth 1 --single-branch --branch release_80 https://github.com/llvm-mirror/clang.git llvm/tools/clang \
     && cd llvm \
     && cmake -H. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/opt/wasm -DLLVM_TARGETS_TO_BUILD= -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly -DCMAKE_BUILD_TYPE=Release  \
     && cmake --build build --target install \
